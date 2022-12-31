@@ -16,9 +16,11 @@
         "@chakra-ui/react": "^2.4.4",
         "@emotion/react": "^11.10.5",
         "@emotion/styled": "^11.10.5",
+        "chart.js": "^4.1.1",
         "dayjs": "^1.11.7",
         "framer-motion": "^8.0.2",
         "react": "^18.1.0",
+        "react-chartjs-2": "^5.1.0",
         "react-dom": "^18.1.0",
         "react-icons": "^4.7.1",
         "react-router-dom": "^6.6.1"
