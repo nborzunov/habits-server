@@ -15,22 +15,24 @@ import {
 } from '@chakra-ui/react';
 import Icons from '~/services/Icons';
 import { ActivityType, GoalType, Habit } from '~/types/types';
-import Header from './Header';
+import Header from '~/components/Habits/Header';
+import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
+import { completedHabitsState, habitsState, selectedHabitState } from '~/store/atoms';
+import { useEffect } from 'react';
+import { DataService } from '~/services/DataService';
 
-const HabitItem = ({
-    habit,
-    selectHabit,
-    selectedHabit,
-}: {
-    habit: Habit;
-    selectedHabit: Habit | null;
-    selectHabit: (habit: Habit) => void;
-}) => {
+const HabitItem = ({ habit }: { habit: Habit }) => {
+    const selectedHabit = useRecoilValue(selectedHabitState);
+
+    const setHabits = useSetRecoilState(habitsState);
+
     const selected = selectedHabit && habit.id === selectedHabit.id;
     return (
         <Box
             key={habit.id}
-            onClick={() => selectHabit(habit)}
+            onClick={() =>
+                setHabits((prev) => prev.map((h: Habit) => ({ ...h, selected: h.id === habit.id })))
+            }
             bg={selected ? 'blackAlpha.50' : 'transparent'}
             transition='all 0.2s ease'
             _hover={{
@@ -72,28 +74,20 @@ const HabitItem = ({
         </Box>
     );
 };
-const HabitsList = ({
-    habits,
-    selectHabit,
-    selectedHabit,
-}: {
-    habits: Habit[];
-    selectedHabit: Habit | null;
-    selectHabit: (habit: Habit) => void;
-}) => {
-    const completedHabits = habits.filter((habit) => habit.completedToday);
+const HabitsList = () => {
+    const [habits, setHabits] = useRecoilState(habitsState);
+    const completedHabits = useRecoilValue(completedHabitsState);
+
+    useEffect(() => {
+        DataService.getHabits().then((res) => setHabits(res));
+    }, [setHabits]);
     return (
         <Box borderRightColor='gray.200' borderRightWidth='2px' h='100vh'>
             <Header />
             <Box>
                 <Stack spacing={0}>
                     {habits.map((habit) => (
-                        <HabitItem
-                            key={habit.id}
-                            habit={habit}
-                            selectHabit={selectHabit}
-                            selectedHabit={selectedHabit}
-                        />
+                        <HabitItem key={habit.id} habit={habit} />
                     ))}
                 </Stack>
                 {completedHabits.length > 0 && (

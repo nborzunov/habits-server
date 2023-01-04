@@ -6,6 +6,7 @@ import { ChakraProvider, extendTheme } from '@chakra-ui/react';
 
 // styles
 import './index.css';
+import { RecoilRoot } from 'recoil';
 
 const theme = extendTheme({
     colors: {
@@ -18,7 +19,9 @@ const theme = extendTheme({
 ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
         <ChakraProvider theme={theme}>
-            <App />
+            <RecoilRoot>
+                <App />
+            </RecoilRoot>
         </ChakraProvider>
     </React.StrictMode>,
 );

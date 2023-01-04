@@ -1,13 +1,26 @@
 import { Box, Grid, GridItem, Heading } from '@chakra-ui/react';
 import Icons from '~/services/Icons';
-import { Habit } from '~/types/types';
 import Statistics from '~/components/Habits/Statistics';
 import TargetCalendar from '~/components/Dashboard/TargetCalendar';
-
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 import TargetChart from '~/components/Habits/TargetChart';
+import { habitsState, selectedHabitState } from '~/store/atoms';
+import { TargetType } from '~/types/types';
 
-const HabitDetails = ({ habit }: { habit: Habit | null }) => {
+const HabitDetails = () => {
+    const habit = useRecoilValue(selectedHabitState);
+    const setHabits = useSetRecoilState(habitsState);
+
     if (!habit) return null;
+
+    const handleCalendarCellClick = (targetId: string, newType: TargetType) => {
+        setHabits((prev) =>
+            prev.map((h) => ({
+                ...h,
+                targets: h.targets.map((t) => (t.id !== targetId ? t : { ...t, type: newType })),
+            })),
+        );
+    };
     return (
         <Box>
             <Heading as='h3' px={2} size='md' mb={4}>
@@ -23,13 +36,15 @@ const HabitDetails = ({ habit }: { habit: Habit | null }) => {
                             startDate={habit.currentStreakStartDate}
                         />
                     </GridItem>
-                    <GridItem gridArea='1 / 19 / 5 / 27'>
+                    <GridItem gridArea='1 / 19 / 5 / 26'>
                         <Box
                             borderRadius='xl'
                             borderColor='gray.200'
                             borderWidth='2px'
                             p='4'
                             height='390px'
+                            display='flex'
+                            justifyContent='center'
                         >
                             <TargetChart />
                         </Box>
@@ -62,7 +77,10 @@ const HabitDetails = ({ habit }: { habit: Habit | null }) => {
                             width='100%'
                             justifyContent='center'
                         >
-                            <TargetCalendar targets={habit.targets} />
+                            <TargetCalendar
+                                targets={habit.targets}
+                                onCellClick={handleCalendarCellClick}
+                            />
                         </Box>
                     </GridItem>
                 </Grid>

@@ -36,6 +36,8 @@ export interface Habit {
     totalTargets: number;
 
     targets: Target[];
+
+    selected?: boolean;
 }
 
 export interface Target {
@@ -48,4 +50,5 @@ export interface Target {
 export enum TargetType {
     Done = 'done',
     Skip = 'skip',
+    Empty = 'empty',
 }
