@@ -1,45 +1,10 @@
-use actix_web::{web, HttpResponse};
-use chrono::{DateTime, TimeZone, Utc};
-use serde::de;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde_json;
-use serde_json::Result as SerdeResult;
-use std::fmt;
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
-
-pub fn config(cfg: &mut web::ServiceConfig) {
-    cfg.service(
-        web::resource("/habits")
-            .app_data(web::Data::new(AppState {
-                habits: Habits::new(),
-            }))
-            .route(web::get().to(get_habits))
-            .route(web::post().to(add_habit)),
-    );
-}
-
-async fn get_habits(state: web::Data<AppState>) -> SerdeResult<HttpResponse> {
-    Ok(HttpResponse::Ok().json(state.habits.inner()))
-}
-
-async fn add_habit(
-    state: web::Data<AppState>,
-    request: web::Json<HabitModel>,
-) -> SerdeResult<HttpResponse> {
-    let habit_model = request.into_inner();
-
-    let new_habit = Habit::new(&habit_model);
-
-    println!("{:?}", new_habit);
-
-    // TODO: handle if there is habit with the same name
-    state.habits.inner().lock().unwrap().push(new_habit.clone());
-    Ok(HttpResponse::Ok().json(new_habit))
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-enum Periodicity {
+pub enum Periodicity {
     Daily,
     Weekly,
     Monthly,
@@ -47,11 +12,11 @@ enum Periodicity {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct CustomPeriodicityValue(Vec<DayOfTheWeek>);
+pub struct CustomPeriodicityValue(Vec<DayOfTheWeek>);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-enum DayOfTheWeek {
+pub enum DayOfTheWeek {
     Sunday,
     Monday,
     Tuesday,
@@ -63,22 +28,57 @@ enum DayOfTheWeek {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-enum ActivityType {
+pub enum ActivityType {
     Boolean,
     Counter,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct ActivityCounterValue(i32);
+pub struct ActivityCounterValue(i32);
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum GoalType {
+    Times,
+    Mins,
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-struct Habit {
+#[serde(rename_all = "lowercase")]
+pub enum TargetType {
+    Done,
+    Skip,
+    Empty,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Target {
+    date: DateTime<Utc>,
+    create_date: DateTime<Utc>,
+    target_type: TargetType,
+}
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct Habit {
     title: String,
     periodicity: Periodicity,
     periodicity_value: Option<CustomPeriodicityValue>,
     activity_type: ActivityType,
     activity_counter_value: Option<ActivityCounterValue>,
-    created_at: DateTime<Utc>,
+    created_date: DateTime<Utc>,
+
+    goal: i32,
+    goal_type: GoalType,
+    start_date: Option<DateTime<Utc>>,
+    completed_today: bool,
+
+    current_streak: i32,
+    current_streak_start_date: Option<DateTime<Utc>>,
+    completed_targets: i32,
+    failed_targets: i32,
+    totat_targets: i32,
+
+    targets: Vec<Target>,
 }
 
 impl Habit {
@@ -89,12 +89,22 @@ impl Habit {
             periodicity_value: data.periodicity_value.clone(),
             activity_type: data.activity_type.clone(),
             activity_counter_value: data.activity_counter_value.clone(),
-            created_at: Utc::now(),
+            created_date: Utc::now(),
+            goal: data.goal,
+            goal_type: data.goal_type.clone(),
+            start_date: None,
+            completed_today: false,
+            current_streak: 0,
+            current_streak_start_date: None,
+            completed_targets: 0,
+            failed_targets: 0,
+            totat_targets: 0,
+            targets: vec![]
         }
     }
 }
 
-type HabitsValue = Mutex<Vec<Habit>>;
+pub type HabitsValue = Mutex<Vec<Habit>>;
 
 #[derive(Serialize, Deserialize)]
 pub struct Habits(HabitsValue);
@@ -113,14 +123,13 @@ impl Habits {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-struct HabitModel {
+#[serde(rename_all = "camelCase")]
+pub struct HabitModel {
     title: String,
     periodicity: Periodicity,
     periodicity_value: Option<CustomPeriodicityValue>,
     activity_type: ActivityType,
     activity_counter_value: Option<ActivityCounterValue>,
-}
-
-struct AppState {
-    habits: Habits,
+    goal: i32,
+    goal_type: GoalType,
 }
