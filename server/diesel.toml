@@ -3,7 +3,6 @@
 
 [print_schema]
 file = "src/schema.rs"
-schema = "MY-SCHEMA"
 
 [migrations_directory]
 dir = "migrations"
