@@ -1,34 +1,34 @@
-//#[actix_web::main]
-//async fn main() -> std::io::Result<()> {
-//    std::env::set_var("RUST_LOG", "debug");
-//    env_logger::init();
-//    HttpServer::new(|| App::new().configure(app::config))
-//        .bind(("127.0.0.1", 8080))?
-//        .run()
-//        .await
-//}
-
-use actix_web::{App, HttpServer};
+use actix_web::{web::Data, App, HttpServer};
 use dotenv::dotenv;
 
-use std::env::set_var;
+use std::env::{set_var, var};
 
-mod app;
-mod db_con;
+mod routes;
 mod models;
+mod repository;
+
+use mongodb::{
+    bson::{extjson::de::Error},
+    results::{ InsertOneResult},
+    Client, Collection,
+};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    // env logger
+    env_logger::init();
     dotenv().ok();
-    set_var("RUST_LOG", "actix_web=debug");
-
-    let pool = db_con::get_pool();
+    let uri = match var("DATABASE_URL") {
+        Ok(v) => v.to_string(),
+        Err(_) => format!("Error loading env variable"),
+    };
+    let client = Client::with_uri_str(uri).await.unwrap();
     HttpServer::new(move || {
         App::new()
-            .data(pool.clone())
-            .service(app::habits::get_habits)
+            .app_data(Data::new(client.clone()))
+            .service(routes::habits::get_habits)
     })
-    .bind(("127.0.0.1", 8080))?
-    .run()
-    .await
+        .bind(("127.0.0.1", 8080))?
+        .run()
+        .await
 }

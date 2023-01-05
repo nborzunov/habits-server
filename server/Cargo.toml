@@ -13,5 +13,9 @@ serde_json = {version = "1.0"}
 env_logger = "0.9.0"
 chrono = { version = "0.4", features = ["serde"]}
 dotenv = "0.15.0"
-diesel = { version = "1.4.8", features = ["postgres", "r2d2", "chrono"] }
-r2d2 = "0.8.9"
+futures = "0.3.17"
+
+[dependencies.mongodb]
+    version = "2.2.0"
+    default-features = false
+    features = ["async-std-runtime"]
