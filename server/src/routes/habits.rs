@@ -1,19 +1,24 @@
-use actix_web::{web, HttpResponse, get, post, Scope};
-use actix_web::dev::Service;
+use actix_web::{web, HttpResponse, get, post};
 use serde_json;
-use serde_json::Result as SerdeResult;
-use crate::models::habits::{HabitModel, Habit, HabitDetails};
-use mongodb::{Client, Collection, IndexModel};
-use mongodb::bson::doc;
-use mongodb::options::IndexOptions;
-use futures::stream::TryStreamExt;
+use crate::models::habits::{HabitModel, HabitDetails, Habit};
+use mongodb::Client;
 use crate::repository;
 
-#[get("/")]
-pub async fn get_habits(client: web::Data<Client>) -> SerdeResult<HttpResponse> {
+#[get("/habits")]
+pub async fn get_habits(client: web::Data<Client>) -> HttpResponse {
     let habits: Vec<HabitDetails> = repository::habits::get_all(client).await
         .iter().map(|h| h.get_details()).collect();
-    Ok(HttpResponse::Ok().json(habits))
+    HttpResponse::Ok().json(habits)
+}
+
+#[post("/habits")]
+pub async fn add_habit(client: web::Data<Client>, form: web::Json<HabitModel>) -> HttpResponse {
+    let res = repository::habits::add(client, Habit::new(&form.into_inner())).await;
+
+    match res {
+        Ok(_) => HttpResponse::Ok().body("habit added"),
+        Err(_) => HttpResponse::InternalServerError().body("Server error"),
+    }
 }
 
 // #[get("/{id}")]

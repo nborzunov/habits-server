@@ -1,10 +1,5 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::sync::Mutex;
-use mongodb::{bson, Client, Collection, Cursor, IndexModel};
-use mongodb::bson::{doc, RawDocumentBuf, Uuid};
-use mongodb::options::IndexOptions;
-use actix_web::{web};
 use mongodb::bson::oid::ObjectId;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -60,20 +55,21 @@ impl Habit {
 
         }
     }
-    // pub fn new(data: &HabitModel) -> Self {
-    //     Habit {
-    //         title: data.title.clone(),
-    //         periodicity: data.periodicity.clone(),
-    //         periodicity_value: data.periodicity_value.clone(),
-    //         activity_type: data.activity_type.clone(),
-    //         activity_counter_value: data.activity_counter_value.clone(),
-    //         created_date: Utc::now(),
-    //         goal: data.goal,
-    //         goal_type: data.goal_type.clone(),
-    //         start_date: None,
-    //         targets: vec![],
-    //     }
-    // }
+    pub fn new(data: &HabitModel) -> Self {
+        Habit {
+            id: None,
+            title: data.title.clone(),
+            periodicity: data.periodicity.clone(),
+            periodicity_value: data.periodicity_value.clone(),
+            activity_type: data.activity_type.clone(),
+            activity_counter_value: data.activity_counter_value.clone(),
+            created_date: Utc::now(),
+            goal: data.goal,
+            goal_type: data.goal_type.clone(),
+            start_date: None,
+            targets: vec![],
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
