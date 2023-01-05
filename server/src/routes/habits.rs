@@ -1,17 +1,18 @@
-use actix_web::{web, HttpResponse, get, post};
+use actix_web::{web, HttpResponse, get, post, Scope};
+use actix_web::dev::Service;
 use serde_json;
 use serde_json::Result as SerdeResult;
-use crate::models::habits::{HabitModel, Habit};
+use crate::models::habits::{HabitModel, Habit, HabitDetails};
 use mongodb::{Client, Collection, IndexModel};
 use mongodb::bson::doc;
 use mongodb::options::IndexOptions;
 use futures::stream::TryStreamExt;
 use crate::repository;
 
-
 #[get("/")]
 pub async fn get_habits(client: web::Data<Client>) -> SerdeResult<HttpResponse> {
-    let habits= repository::habits::get_all(client).await;
+    let habits: Vec<HabitDetails> = repository::habits::get_all(client).await
+        .iter().map(|h| h.get_details()).collect();
     Ok(HttpResponse::Ok().json(habits))
 }
 
@@ -26,18 +27,18 @@ pub async fn get_habits(client: web::Data<Client>) -> SerdeResult<HttpResponse> 
 //     }
 // }
 
-#[post("/")]
-pub async fn add_habit(
-        request: web::Json<HabitModel>,
-        ) -> SerdeResult<HttpResponse> {
-    let habit_model = request.into_inner();
-
-    let new_habit = Habit::new(&habit_model);
-
-    println!("{:?}", new_habit);
-
-    Ok(HttpResponse::Ok().json(new_habit))
-}
+// #[post("/")]
+// pub async fn add_habit(
+//         request: web::Json<HabitModel>,
+//         ) -> SerdeResult<HttpResponse> {
+//     let habit_model = request.into_inner();
+//
+//     let new_habit = Habit::new(&habit_model);
+//
+//     println!("{:?}", new_habit);
+//
+//     Ok(HttpResponse::Ok().json(new_habit))
+// }
 
 
 // TODO: add target

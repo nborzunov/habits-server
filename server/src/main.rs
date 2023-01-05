@@ -1,4 +1,4 @@
-use actix_web::{web::Data, App, HttpServer};
+use actix_web::{web::Data, App, HttpServer, web};
 use dotenv::dotenv;
 
 use std::env::{set_var, var};
@@ -23,10 +23,13 @@ async fn main() -> std::io::Result<()> {
         Err(_) => format!("Error loading env variable"),
     };
     let client = Client::with_uri_str(uri).await.unwrap();
+
+
     HttpServer::new(move || {
         App::new()
             .app_data(Data::new(client.clone()))
-            .service(routes::habits::get_habits)
+            .service(web::scope("/habits")
+                .service(routes::habits::get_habits))
     })
         .bind(("127.0.0.1", 8080))?
         .run()
