@@ -55,7 +55,7 @@ impl Habit {
 
         }
     }
-    pub fn new(data: &HabitModel) -> Self {
+    pub fn new(data: &HabitData) -> Self {
         Habit {
             id: None,
             title: data.title.clone(),
@@ -99,7 +99,7 @@ pub struct HabitDetails {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct HabitModel {
+pub struct HabitData {
     title: String,
     periodicity: Periodicity,
     periodicity_value: Option<CustomPeriodicityValue>,

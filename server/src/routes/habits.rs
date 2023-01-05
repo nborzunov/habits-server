@@ -1,22 +1,31 @@
-use actix_web::{web, HttpResponse, get, post};
-use serde_json;
-use crate::models::habits::{HabitModel, HabitDetails, Habit};
+use actix_web::{web, HttpResponse, get, post, delete};
+use crate::models::habits::{HabitData, HabitDetails, Habit};
 use mongodb::Client;
 use crate::repository;
 
 #[get("/habits")]
-pub async fn get_habits(client: web::Data<Client>) -> HttpResponse {
+pub async fn get_all(client: web::Data<Client>) -> HttpResponse {
     let habits: Vec<HabitDetails> = repository::habits::get_all(client).await
         .iter().map(|h| h.get_details()).collect();
     HttpResponse::Ok().json(habits)
 }
 
 #[post("/habits")]
-pub async fn add_habit(client: web::Data<Client>, form: web::Json<HabitModel>) -> HttpResponse {
-    let res = repository::habits::add(client, Habit::new(&form.into_inner())).await;
+pub async fn create(client: web::Data<Client>, form: web::Json<HabitData>) -> HttpResponse {
+    let res = repository::habits::create(client, Habit::new(&form.into_inner())).await;
 
     match res {
         Ok(_) => HttpResponse::Ok().body("habit added"),
+        Err(_) => HttpResponse::InternalServerError().body("Server error"),
+    }
+}
+
+#[delete("/habits/{habit_id}")]
+pub async fn delete(client: web::Data<Client>, path: web::Path<String>) -> HttpResponse {
+    let res = repository::habits::delete(client, path.into_inner()).await;
+
+    match res {
+        Ok(_) => HttpResponse::Ok().body("habit deleted"),
         Err(_) => HttpResponse::InternalServerError().body("Server error"),
     }
 }

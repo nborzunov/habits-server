@@ -23,8 +23,9 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .app_data(Data::new(client.clone()))
-            .service(routes::habits::get_habits)
-            .service(routes::habits::add_habit)
+            .service(routes::habits::get_all)
+            .service(routes::habits::create)
+            .service(routes::habits::delete)
 
     })
         .bind(("127.0.0.1", 8080))?
