@@ -2,12 +2,21 @@ use actix_web::{web, HttpResponse, get, post, delete};
 use crate::models::habits::{HabitData, HabitDetails, Habit};
 use mongodb::Client;
 use crate::repository;
+use std::iter::Iterator;
+use crate::models::targets::TargetDetails;
 
 #[get("/habits")]
 pub async fn get_all(client: web::Data<Client>) -> HttpResponse {
-    let habits: Vec<HabitDetails> = repository::habits::get_all(client).await
-        .iter().map(|h| h.get_details()).collect();
-    HttpResponse::Ok().json(habits)
+    let habits: Vec<Habit> = repository::habits::get_all(client.clone()).await;
+
+    let result = futures::future::join_all(
+        habits.iter().map(|h| async {
+            let targets = repository::targets::get_all(client.clone(), &h.id.clone().unwrap()).await;
+            HabitDetails::parse(h, targets.iter().map(|t| TargetDetails::parse(&t)).collect())
+        })
+    ).await;
+
+    HttpResponse::Ok().json(result)
 }
 
 #[post("/habits")]
@@ -30,31 +39,4 @@ pub async fn delete(client: web::Data<Client>, path: web::Path<String>) -> HttpR
     }
 }
 
-// #[get("/{id}")]
-// pub async fn get_habit(client: web::Data<Client>) -> SerdeResult<HttpResponse> {
-//     match Habit::get_habit(client).await {
-//         Ok(v) => Ok(HttpResponse::Ok().json(v)),
-//         Err(e) => {
-//             println!("{:?}", e);
-//             return Ok(HttpResponse::InternalServerError().body(format!("Server error")))
-//         },
-//     }
-// }
-
-// #[post("/")]
-// pub async fn add_habit(
-//         request: web::Json<HabitModel>,
-//         ) -> SerdeResult<HttpResponse> {
-//     let habit_model = request.into_inner();
-//
-//     let new_habit = Habit::new(&habit_model);
-//
-//     println!("{:?}", new_habit);
-//
-//     Ok(HttpResponse::Ok().json(new_habit))
-// }
-
-
-// TODO: add target
-// TODO: change target type
 // TODO: edit habit data

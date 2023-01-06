@@ -7,6 +7,7 @@ mod routes;
 mod models;
 mod repository;
 
+static DB_NAME: &str = "dev";
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -26,6 +27,7 @@ async fn main() -> std::io::Result<()> {
             .service(routes::habits::get_all)
             .service(routes::habits::create)
             .service(routes::habits::delete)
+            .service(routes::targets::create)
 
     })
         .bind(("127.0.0.1", 8080))?

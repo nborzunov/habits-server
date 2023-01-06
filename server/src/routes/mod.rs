@@ -1,4 +1,5 @@
 pub mod habits;
+pub mod targets;
 //
 //pub fn config(cfg: &mut web::ServiceConfig) {
 //    cfg.service(
