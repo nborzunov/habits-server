@@ -5,21 +5,39 @@ import TargetCalendar from '~/components/Dashboard/TargetCalendar';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import TargetChart from '~/components/Habits/TargetChart';
 import { habitsState, selectedHabitState } from '~/store/atoms';
-import { TargetType } from '~/types/types';
+import { Habit, TargetType } from '~/types/types';
+import { useMutation } from '@tanstack/react-query';
+import axios from 'axios';
 
 const HabitDetails = () => {
     const habit = useRecoilValue(selectedHabitState);
     const setHabits = useSetRecoilState(habitsState);
 
+    const createTarget = useMutation({
+        mutationFn: (data: {
+            id: string | null;
+            habitId: string;
+            date: Date;
+            targetType: string;
+        }) => {
+            return axios
+                .post<Habit>('http://localhost:8080/targets', data)
+                .then((res) => res.data)
+                .then((newHabit) =>
+                    setHabits((prev) => prev.map((h) => (h.id !== newHabit.id ? h : newHabit))),
+                );
+        },
+    });
+
     if (!habit) return null;
 
-    const handleCalendarCellClick = (targetId: string, newType: TargetType) => {
-        setHabits((prev) =>
-            prev.map((h) => ({
-                ...h,
-                targets: h.targets.map((t) => (t.id !== targetId ? t : { ...t, type: newType })),
-            })),
-        );
+    const handleCalendarCellClick = (targetId: string | null, date: Date, newType: TargetType) => {
+        createTarget.mutate({
+            id: targetId,
+            habitId: habit.id,
+            date,
+            targetType: newType,
+        });
     };
     return (
         <Box>

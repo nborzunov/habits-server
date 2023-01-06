@@ -15,11 +15,17 @@ export const completedHabitsState = selector({
     },
 });
 
+export const selectedHabitIdState = atom<string | null>({
+    key: 'selectedHabitIdState',
+    default: null,
+});
+
 export const selectedHabitState = selector({
     key: 'selectedHabitState',
     get: ({ get }) => {
         const list = get(habitsState);
 
-        return list.find((habit) => habit.selected);
+        const selectedId = get(selectedHabitIdState);
+        return list.find((habit) => habit.id == selectedId);
     },
 });

@@ -3,33 +3,33 @@ import { ActivityType, Habit, Periodicity, GoalType, Target, TargetType } from '
 const targets: Target[] = [
     {
         id: '1',
-        date: new Date('2022-12-01'),
+        date: new Date('2023-12-01'),
         createDate: new Date(),
-        type: TargetType.Done,
+        targetType: TargetType.Done,
     },
     {
         id: '2',
-        date: new Date('2022-12-02'),
+        date: new Date('2023-12-02'),
         createDate: new Date(),
-        type: TargetType.Done,
+        targetType: TargetType.Done,
     },
     {
         id: '3',
-        date: new Date('2022-12-03'),
+        date: new Date('2023-12-03'),
         createDate: new Date(),
-        type: TargetType.Skip,
+        targetType: TargetType.Skip,
     },
     {
         id: '4',
-        date: new Date('2022-12-04'),
+        date: new Date('2023-12-04'),
         createDate: new Date(),
-        type: TargetType.Done,
+        targetType: TargetType.Done,
     },
     {
         id: '5',
-        date: new Date('2022-12-05'),
+        date: new Date('2023-12-05'),
         createDate: new Date(),
-        type: TargetType.Done,
+        targetType: TargetType.Done,
     },
 ];
 

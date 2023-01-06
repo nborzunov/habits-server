@@ -16,7 +16,7 @@ const Cell = ({
     daysInMonth: number;
     size: number;
     targetsMap: Record<string, Target>;
-    onClick: (targetId: string, newType: TargetType) => void;
+    onClick: (targetId: string | null, date: Date, newType: TargetType) => void;
 }) => {
     const sizePx = `${size}px`;
     const theme = useTheme();
@@ -27,7 +27,7 @@ const Cell = ({
 
     const green = theme.colors.green;
 
-    const day = dayjs(`2022-${monthId + 1}-${dayId + 1}`);
+    const day = dayjs(`2023-${monthId + 1}-${dayId + 1}`);
 
     const target = targetsMap[day.format('DD/MM/YYYY')];
 
@@ -36,17 +36,17 @@ const Cell = ({
 
         if (!target) {
             newType = TargetType.Done;
-        } else if (target.type === TargetType.Done) {
+        } else if (target.targetType === TargetType.Done) {
             newType = TargetType.Skip;
         } else {
             newType = TargetType.Empty;
         }
-        onClick(target?.id, newType);
+        onClick(target?.id, day.toDate(), newType);
     };
     return (
         <Box key={monthId + dayId} cursor='pointer'>
-            <Tooltip label={dayjs(`2022-${monthId + 1}-${dayId + 1}`).format('D MMMM YYYY')}>
-                {target && target.type === TargetType.Skip ? (
+            <Tooltip label={dayjs(`2023-${monthId + 1}-${dayId + 1}`).format('D MMMM YYYY')}>
+                {target && target.targetType === TargetType.Skip ? (
                     <Box
                         width={sizePx}
                         height={sizePx}
@@ -78,10 +78,10 @@ const Month = ({
     monthId: number;
     size: number;
     targetsMap: Record<string, Target>;
-    onClick: (targetId: string, newType: TargetType) => void;
+    onClick: (targetId: string | null, date: Date, newType: TargetType) => void;
 }) => {
-    const daysInMonth = dayjs(`2022-${monthId + 1}-1`).daysInMonth();
-    const firstDay = dayjs(`2022-${monthId + 1}-1`).day();
+    const daysInMonth = dayjs(`2023-${monthId + 1}-1`).daysInMonth();
+    const firstDay = dayjs(`2023-${monthId + 1}-1`).day();
     const columns = Math.ceil((firstDay + daysInMonth) / 7);
 
     const gaps = [3, 3];
@@ -89,7 +89,7 @@ const Month = ({
     const gap = gaps[size];
     const cellSize = cellSizes[size];
 
-    const month = dayjs(`2022-${monthId + 1}-1`).format('MMM');
+    const month = dayjs(`2023-${monthId + 1}-1`).format('MMM');
     return (
         <Box p='1'>
             <Text pb='1' textAlign='center' fontWeight='bold'>
@@ -124,7 +124,7 @@ const TargetCalendar = ({
 }: {
     size?: 'sm' | 'md';
     targets: Target[];
-    onCellClick: (targetId: string, newType: TargetType) => void;
+    onCellClick: (targetId: string | null, date: Date, newType: TargetType) => void;
 }) => {
     const targetsMap = targets.reduce((acc, target) => {
         acc[dayjs(target.date).format('DD/MM/YYYY')] = target;

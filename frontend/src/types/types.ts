@@ -44,7 +44,7 @@ export interface Target {
     id: string;
     date: Date;
     createDate: Date;
-    type: TargetType;
+    targetType: TargetType;
 }
 
 export enum TargetType {

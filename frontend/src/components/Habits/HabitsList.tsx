@@ -16,23 +16,19 @@ import {
 import Icons from '~/services/Icons';
 import { ActivityType, GoalType, Habit } from '~/types/types';
 import Header from '~/components/Habits/Header';
-import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
-import { completedHabitsState, habitsState, selectedHabitState } from '~/store/atoms';
-import { useEffect } from 'react';
-import { DataService } from '~/services/DataService';
+import { useRecoilState, useRecoilValue } from 'recoil';
+import { completedHabitsState, habitsState, selectedHabitIdState } from '~/store/atoms';
+import { useQuery } from '@tanstack/react-query';
+import axios from 'axios';
 
 const HabitItem = ({ habit }: { habit: Habit }) => {
-    const selectedHabit = useRecoilValue(selectedHabitState);
+    const [selectedHabitId, setSelectedHabitId] = useRecoilState(selectedHabitIdState);
 
-    const setHabits = useSetRecoilState(habitsState);
-
-    const selected = selectedHabit && habit.id === selectedHabit.id;
+    const selected = selectedHabitId && habit.id === selectedHabitId;
     return (
         <Box
             key={habit.id}
-            onClick={() =>
-                setHabits((prev) => prev.map((h: Habit) => ({ ...h, selected: h.id === habit.id })))
-            }
+            onClick={() => setSelectedHabitId(habit.id)}
             bg={selected ? 'blackAlpha.50' : 'transparent'}
             transition='all 0.2s ease'
             _hover={{
@@ -78,9 +74,18 @@ const HabitsList = () => {
     const [habits, setHabits] = useRecoilState(habitsState);
     const completedHabits = useRecoilValue(completedHabitsState);
 
-    useEffect(() => {
-        DataService.getHabits().then((res) => setHabits(res));
-    }, [setHabits]);
+    const { isLoading } = useQuery<Habit[]>({
+        queryKey: ['habits'],
+        queryFn: () =>
+            axios.get('http://localhost:8080/habits').then((res) => {
+                setHabits(res.data);
+                return res.data;
+            }),
+        initialData: [],
+    });
+
+    if (isLoading) return <div>Loading...</div>;
+
     return (
         <Box borderRightColor='gray.200' borderRightWidth='2px' h='100vh'>
             <Header />
