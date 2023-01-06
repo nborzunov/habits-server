@@ -1,12 +1,13 @@
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
 use mongodb::bson::oid::ObjectId;
+use serde::{Deserialize, Serialize};
+
 use crate::models::targets::{Target, TargetDetails};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Habit {
-    #[serde(rename="_id", skip_serializing_if="Option::is_none")]
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
     title: String,
     periodicity: Periodicity,
@@ -18,6 +19,7 @@ pub struct Habit {
     goal: i32,
     goal_type: GoalType,
     pub targets: Vec<ObjectId>,
+    // TODO: allow skipping targets
 }
 
 impl Habit {
@@ -64,6 +66,7 @@ pub struct HabitDetails {
 }
 
 impl HabitDetails {
+    // TODO: fix calculation of streak
     pub fn parse(h: &Habit, targets: Vec<TargetDetails>) -> HabitDetails {
         let current_streak_targets = Target::get_streak(&targets);
 
@@ -85,7 +88,7 @@ impl HabitDetails {
             activity_type: h.activity_type.clone(),
             activity_counter_value: h.activity_counter_value.clone(),
             created_date: h.created_date.clone(),
-            start_date: h.start_date.clone(),
+            start_date: Self::get_start_date(&targets),
             goal: h.goal.clone(),
             goal_type: h.goal_type.clone(),
             targets: targets.clone(),
@@ -96,10 +99,17 @@ impl HabitDetails {
             completed_targets,
             failed_targets,
             total_targets,
-
         }
     }
+
+    pub fn get_start_date(targets: &Vec<TargetDetails>) -> Option<DateTime<Utc>> {
+        if targets.len() == 0 {
+            return None;
+        }
+        return Some(targets[0].date.clone());
+    }
 }
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct HabitData {

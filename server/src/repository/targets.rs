@@ -1,20 +1,40 @@
 use actix_web::web;
-use mongodb::bson::{doc, RawDocumentBuf};
-use mongodb::{bson, Client};
 use futures::TryStreamExt;
-use std::str::FromStr;
+use mongodb::{bson, Client};
+use mongodb::bson::{doc, RawDocumentBuf};
 use mongodb::bson::oid::ObjectId;
 
-
 use crate::DB_NAME;
-use crate::models::targets::Target;
+use crate::models::targets::{Target, TargetType};
 
 const COLL_NAME: &str = "targets";
 
 pub async fn create(client: web::Data<Client>, target: Target) -> Result<(), ()> {
-    client.database(DB_NAME).
-        collection(COLL_NAME)
-        .insert_one(target, None).await.expect("Failed to insert target");
+    match target.target_type {
+        TargetType::Done => {
+            client.database(DB_NAME)
+                .collection(COLL_NAME)
+                .insert_one(target, None)
+                .await.expect("Failed to insert target");
+        }
+        TargetType::Skip => {
+            client.database(DB_NAME)
+                .collection::<Target>(COLL_NAME)
+                .update_one(
+                    doc! { "_id": target.id.unwrap() },
+                    doc! { "$set": { "targetType": "skip" } },
+                    None,
+                )
+                .await.expect("Failed to update target");
+        }
+        TargetType::Empty => {
+            client.database(DB_NAME)
+                .collection::<Target>(COLL_NAME)
+                .delete_one(doc! { "_id": target.id.unwrap() }, None)
+                .await.expect("Failed to delete target");
+        }
+    }
+
     Ok(())
 }
 

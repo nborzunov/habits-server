@@ -1,12 +1,11 @@
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
 use mongodb::bson::oid::ObjectId;
-
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Target {
-    #[serde(rename="_id", skip_serializing_if="Option::is_none")]
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
     pub habit_id: ObjectId,
     pub date: DateTime<Utc>,
@@ -17,7 +16,7 @@ pub struct Target {
 impl Target {
     pub fn new(data: &TargetData) -> Self {
         Target {
-            id: None,
+            id: data.id,
             habit_id: data.habit_id.clone(),
             date: data.date.clone(),
             create_date: Utc::now(),
@@ -91,13 +90,17 @@ impl TargetDetails {
         }
     }
 }
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct TargetData {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub id: Option<ObjectId>,
     pub date: DateTime<Utc>,
     pub target_type: TargetType,
     pub habit_id: ObjectId,
 }
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum TargetType {

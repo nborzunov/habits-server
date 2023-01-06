@@ -1,9 +1,11 @@
-use actix_web::{web, HttpResponse, get, post, delete};
-use crate::models::habits::{HabitData, HabitDetails, Habit};
-use mongodb::Client;
-use crate::repository;
 use std::iter::Iterator;
+
+use actix_web::{delete, get, HttpResponse, post, web};
+use mongodb::Client;
+
+use crate::models::habits::{Habit, HabitData, HabitDetails};
 use crate::models::targets::TargetDetails;
+use crate::repository;
 
 #[get("/habits")]
 pub async fn get_all(client: web::Data<Client>) -> HttpResponse {

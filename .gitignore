@@ -1,3 +1,4 @@
 /server/target
 .vscode
 .env
+.idea
