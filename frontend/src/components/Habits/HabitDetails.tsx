@@ -97,6 +97,7 @@ const HabitDetails = () => {
                         >
                             <TargetCalendar
                                 targets={habit.targets}
+                                habit={habit}
                                 onCellClick={handleCalendarCellClick}
                             />
                         </Box>

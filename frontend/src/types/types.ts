@@ -34,6 +34,7 @@ export interface Habit {
     completedTargets: number;
     failedTargets: number;
     totalTargets: number;
+    allowSkip: boolean;
 
     targets: Target[];
 

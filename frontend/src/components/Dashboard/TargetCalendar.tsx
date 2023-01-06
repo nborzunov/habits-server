@@ -1,6 +1,6 @@
 import { Box, Flex, Grid, GridItem, Text, Tooltip, useTheme } from '@chakra-ui/react';
 import dayjs from 'dayjs';
-import { Target, TargetType } from '~/types/types';
+import { Habit, Target, TargetType } from '~/types/types';
 import getLoop from '~/utils/getLoop';
 
 const Cell = ({
@@ -9,6 +9,7 @@ const Cell = ({
     daysInMonth,
     size,
     targetsMap,
+    habit,
     onClick,
 }: {
     dayId: number;
@@ -16,6 +17,7 @@ const Cell = ({
     daysInMonth: number;
     size: number;
     targetsMap: Record<string, Target>;
+    habit: Habit;
     onClick: (targetId: string | null, date: Date, newType: TargetType) => void;
 }) => {
     const sizePx = `${size}px`;
@@ -27,7 +29,7 @@ const Cell = ({
 
     const green = theme.colors.green;
 
-    const day = dayjs(`2023-${monthId + 1}-${dayId + 1}`);
+    const day = dayjs(`2023-${monthId + 1}-${dayId + 2}`);
 
     const target = targetsMap[day.format('DD/MM/YYYY')];
 
@@ -36,11 +38,12 @@ const Cell = ({
 
         if (!target) {
             newType = TargetType.Done;
-        } else if (target.targetType === TargetType.Done) {
+        } else if (target.targetType === TargetType.Done && habit.allowSkip) {
             newType = TargetType.Skip;
         } else {
             newType = TargetType.Empty;
         }
+
         onClick(target?.id, day.toDate(), newType);
     };
     return (
@@ -73,11 +76,13 @@ const Month = ({
     monthId,
     size,
     targetsMap,
+    habit,
     onClick,
 }: {
     monthId: number;
     size: number;
     targetsMap: Record<string, Target>;
+    habit: Habit;
     onClick: (targetId: string | null, date: Date, newType: TargetType) => void;
 }) => {
     const daysInMonth = dayjs(`2023-${monthId + 1}-1`).daysInMonth();
@@ -107,6 +112,7 @@ const Month = ({
                                     daysInMonth={daysInMonth}
                                     size={cellSize}
                                     targetsMap={targetsMap}
+                                    habit={habit}
                                     onClick={onClick}
                                 />
                             ))}
@@ -120,10 +126,12 @@ const Month = ({
 const TargetCalendar = ({
     size,
     targets,
+    habit,
     onCellClick,
 }: {
     size?: 'sm' | 'md';
     targets: Target[];
+    habit: Habit;
     onCellClick: (targetId: string | null, date: Date, newType: TargetType) => void;
 }) => {
     const targetsMap = targets.reduce((acc, target) => {
@@ -140,6 +148,7 @@ const TargetCalendar = ({
                         monthId={i}
                         size={size === 'sm' ? 0 : 1}
                         targetsMap={targetsMap}
+                        habit={habit}
                         onClick={onCellClick}
                     />
                 ))}
