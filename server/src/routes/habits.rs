@@ -13,7 +13,8 @@ pub async fn get_all(client: web::Data<Client>) -> HttpResponse {
 
     let result = futures::future::join_all(
         habits.iter().map(|h| async {
-            let targets = repository::targets::get_all(client.clone(), &h.id.clone().unwrap()).await;
+            let targets = repository::targets::get_all(client.clone(), &h.id.clone().unwrap())
+                .await;
             HabitDetails::parse(h, targets.iter().map(|t| TargetDetails::parse(&t)).collect())
         })
     ).await;

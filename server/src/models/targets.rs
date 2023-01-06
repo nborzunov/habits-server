@@ -1,6 +1,10 @@
-use chrono::{DateTime, Utc};
+use std::collections::HashMap;
+
+use chrono::{DateTime, Duration, NaiveDate, Utc};
 use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
+
+use crate::models::habits::Habit;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -24,18 +28,52 @@ impl Target {
         }
     }
 
-    pub fn get_streak(targets: &Vec<TargetDetails>) -> Vec<&TargetDetails> {
+    pub fn get_streak(habit: &Habit, mut targets: Vec<TargetDetails>, first: Option<TargetDetails>) -> (Vec<TargetDetails>, i32) {
         let mut streak = vec![];
-        let mut streak_started = false;
-        for target in targets {
-            if matches!(target.target_type, TargetType::Done) {
-                streak_started = true;
-                streak.push(target);
-            } else if streak_started {
-                break;
-            }
+        let mut failed = 0;
+        targets.reverse();
+
+        if targets.len() == 0 {
+            return (streak, failed);
         }
-        streak
+        let mut last = targets[0].clone().date.date_naive();
+        let first = first.unwrap().date.date_naive();
+        let mut skips: Vec<&TargetDetails> = vec![];
+        let mut started = false;
+        let mut targets_map: HashMap<NaiveDate, TargetDetails> = HashMap::new();
+        for target in targets.iter() {
+            targets_map.insert(target.date.clone().date_naive(), target.clone());
+        }
+
+        // TODO: handle if there are series start with skip
+        while last != first {
+            match targets_map.get(&last) {
+                Some(target) => {
+                    if target.date.date_naive() == last {
+                        if habit.allow_skip && matches!(target.clone().target_type, TargetType::Skip) {
+                            skips.push(target);
+                        } else if matches!(target.clone().target_type, TargetType::Done) {
+                            started = true;
+                            for &skip in skips.iter() {
+                                streak.push(skip.clone());
+                            }
+                            skips.clear();
+                            streak.push(target.clone());
+                        }
+                    }
+                }
+                None => {
+                    if started {
+                        failed += 1;
+                    }
+                }
+            }
+            last -= Duration::days(1);
+        };
+
+
+        streak.reverse();
+        return (streak, failed);
     }
 
     pub fn get_completed(targets: &Vec<TargetDetails>) -> i32 {
@@ -46,16 +84,6 @@ impl Target {
             }
         }
         completed
-    }
-
-    pub fn get_failed(targets: &Vec<TargetDetails>) -> i32 {
-        let mut failed = 0;
-        for target in targets {
-            if matches!(target.target_type, TargetType::Skip) {
-                failed += 1;
-            }
-        }
-        failed
     }
 
     pub fn get_total(targets: &Vec<TargetDetails>) -> i32 {
