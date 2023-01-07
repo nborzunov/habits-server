@@ -1,4 +1,5 @@
 use std::iter::Iterator;
+use std::str::FromStr;
 
 use actix_web::{delete, get, post, put, web, HttpResponse};
 use mongodb::Client;
@@ -38,6 +39,22 @@ pub async fn create(client: web::Data<Client>, form: web::Json<HabitData>) -> Ht
     }
 }
 
+#[put("/habits/{habit_id}")]
+pub async fn edit(
+    client: web::Data<Client>,
+    path: web::Path<String>,
+    form: web::Json<HabitData>,
+) -> HttpResponse {
+    repository::habits::edit(client.clone(), path.clone(), form.into_inner()).await;
+    let habit = repository::habits::get_details(
+        client.clone(),
+        mongodb::bson::oid::ObjectId::from_str(&path.clone()).unwrap(),
+    )
+    .await;
+
+    HttpResponse::Ok().json(habit)
+}
+
 #[delete("/habits/{habit_id}")]
 pub async fn delete(client: web::Data<Client>, path: web::Path<String>) -> HttpResponse {
     let res = repository::habits::delete(client, path.into_inner()).await;
@@ -56,5 +73,3 @@ pub async fn archive(client: web::Data<Client>, path: web::Path<String>) -> Http
         Err(_) => HttpResponse::InternalServerError().body("Server error"),
     }
 }
-
-// TODO: edit habit data

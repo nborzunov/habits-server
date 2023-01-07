@@ -5,9 +5,10 @@ use actix_web::web;
 use futures::TryStreamExt;
 use mongodb::bson::oid::ObjectId;
 use mongodb::bson::{doc, Bson, RawDocumentBuf};
+use mongodb::results::UpdateResult;
 use mongodb::{bson, Client};
 
-use crate::models::habits::{Habit, HabitDetails};
+use crate::models::habits::{Habit, HabitData, HabitDetails};
 use crate::models::targets::TargetDetails;
 use crate::{repository, DB_NAME};
 
@@ -67,6 +68,19 @@ pub async fn create(client: web::Data<Client>, habit: Habit) -> Result<Bson, ()>
         .await
         .expect("Failed to insert habit")
         .inserted_id)
+}
+
+pub async fn edit(client: web::Data<Client>, id: String, habit: HabitData) -> UpdateResult {
+    client
+        .database(DB_NAME)
+        .collection::<Habit>(COLL_NAME)
+        .update_one(
+            doc! {"_id": mongodb::bson::oid::ObjectId::from_str(&id).unwrap() },
+            doc! {"$set": bson::to_bson(&habit).unwrap() },
+            None,
+        )
+        .await
+        .expect("Failed to edit habit")
 }
 
 pub async fn delete(client: web::Data<Client>, id: String) -> Result<(), ()> {

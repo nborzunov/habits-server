@@ -38,6 +38,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(Data::new(client.clone()))
             .service(routes::habits::get_all)
             .service(routes::habits::create)
+            .service(routes::habits::edit)
             .service(routes::habits::delete)
             .service(routes::habits::archive)
             .service(routes::targets::create)
