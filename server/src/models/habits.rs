@@ -12,9 +12,7 @@ pub struct Habit {
     title: String,
     periodicity: Periodicity,
     periodicity_value: Option<DaysSequence>,
-    activity_type: ActivityType,
-    activity_counter_value: Option<ActivityCounterValue>,
-    created_date: DateTime<Utc>,
+    pub created_date: DateTime<Utc>,
     goal: i32,
     goal_type: GoalType,
     pub allow_skip: bool,
@@ -27,8 +25,6 @@ impl Habit {
             title: data.title.clone(),
             periodicity: data.periodicity.clone(),
             periodicity_value: data.periodicity_value.clone(),
-            activity_type: data.activity_type.clone(),
-            activity_counter_value: data.activity_counter_value.clone(),
             created_date: Utc::now(),
             goal: data.goal,
             goal_type: data.goal_type.clone(),
@@ -44,8 +40,6 @@ pub struct HabitDetails {
     title: String,
     periodicity: Periodicity,
     periodicity_value: Option<DaysSequence>,
-    activity_type: ActivityType,
-    activity_counter_value: Option<ActivityCounterValue>,
     created_date: DateTime<Utc>,
 
     goal: i32,
@@ -64,15 +58,17 @@ pub struct HabitDetails {
 }
 
 impl HabitDetails {
-    // TODO: fix calculation of streak
     pub fn parse(h: &Habit, mut targets: Vec<TargetDetails>) -> HabitDetails {
         targets.sort_by_key(|t| t.date.clone());
         let first: Option<TargetDetails> = match targets.first() {
             Some(t) => Some(t.clone()),
             None => None,
         };
-        let (current_streak_targets, failed_targets) = Target::get_streak(h, targets.clone(), first.clone());
-        let completed_today = current_streak_targets.iter().any(|target| target.date.date_naive() == Utc::now().date_naive());
+        let (current_streak_targets, failed_targets) =
+            Target::get_streak(h, targets.clone(), first.clone());
+        let completed_today = current_streak_targets
+            .iter()
+            .any(|target| target.date.date_naive() == Utc::now().date_naive());
         let completed_targets = Target::get_completed(&targets);
         let total_targets = Target::get_total(&targets);
 
@@ -81,8 +77,6 @@ impl HabitDetails {
             title: h.title.clone(),
             periodicity: h.periodicity.clone(),
             periodicity_value: h.periodicity_value.clone(),
-            activity_type: h.activity_type.clone(),
-            activity_counter_value: h.activity_counter_value.clone(),
             created_date: h.created_date.clone(),
             start_date: Self::get_start_date(&targets),
             goal: h.goal.clone(),
@@ -92,9 +86,10 @@ impl HabitDetails {
             completed_today,
 
             current_streak: current_streak_targets.len() as i32,
-            current_streak_start_date: match current_streak_targets.iter().find(|t| {
-                matches!(t.target_type, TargetType::Done)
-            }) {
+            current_streak_start_date: match current_streak_targets
+                .iter()
+                .find(|t| matches!(t.target_type, TargetType::Done))
+            {
                 Some(t) => Some(t.date.clone()),
                 None => None,
             },
@@ -118,11 +113,9 @@ pub struct HabitData {
     title: String,
     periodicity: Periodicity,
     periodicity_value: Option<DaysSequence>,
-    activity_type: ActivityType,
-    activity_counter_value: Option<ActivityCounterValue>,
-    allow_skip: bool,
     goal: i32,
     goal_type: GoalType,
+    allow_skip: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -151,20 +144,7 @@ pub enum DayOfTheWeek {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-pub enum ActivityType {
-    Boolean,
-    Counter,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ActivityCounterValue(i32);
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
 pub enum GoalType {
     Times,
     Mins,
 }
-
-
-

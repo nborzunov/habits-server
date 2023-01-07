@@ -1,6 +1,6 @@
 use std::iter::Iterator;
 
-use actix_web::{delete, get, HttpResponse, post, web};
+use actix_web::{delete, get, post, web, HttpResponse};
 use mongodb::Client;
 
 use crate::models::habits::{Habit, HabitData, HabitDetails};
@@ -11,23 +11,29 @@ use crate::repository;
 pub async fn get_all(client: web::Data<Client>) -> HttpResponse {
     let habits: Vec<Habit> = repository::habits::get_all(client.clone()).await;
 
-    let result = futures::future::join_all(
-        habits.iter().map(|h| async {
-            let targets = repository::targets::get_all(client.clone(), &h.id.clone().unwrap())
-                .await;
-            HabitDetails::parse(h, targets.iter().map(|t| TargetDetails::parse(&t)).collect())
-        })
-    ).await;
+    let result = futures::future::join_all(habits.iter().map(|h| async {
+        let targets = repository::targets::get_all(client.clone(), &h.id.clone().unwrap()).await;
+        HabitDetails::parse(
+            h,
+            targets.iter().map(|t| TargetDetails::parse(&t)).collect(),
+        )
+    }))
+    .await;
 
     HttpResponse::Ok().json(result)
 }
 
 #[post("/habits")]
 pub async fn create(client: web::Data<Client>, form: web::Json<HabitData>) -> HttpResponse {
-    let res = repository::habits::create(client, Habit::new(&form.into_inner())).await;
+    let res = repository::habits::create(client.clone(), Habit::new(&form.into_inner())).await;
 
     match res {
-        Ok(_) => HttpResponse::Ok().body("habit added"),
+        Ok(habit_id) => {
+            let habit =
+                repository::habits::get_details(client.clone(), habit_id.as_object_id().unwrap())
+                    .await;
+            HttpResponse::Ok().json(habit)
+        }
         Err(_) => HttpResponse::InternalServerError().body("Server error"),
     }
 }

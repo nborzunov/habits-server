@@ -28,7 +28,11 @@ impl Target {
         }
     }
 
-    pub fn get_streak(habit: &Habit, mut targets: Vec<TargetDetails>, first: Option<TargetDetails>) -> (Vec<TargetDetails>, i32) {
+    pub fn get_streak(
+        habit: &Habit,
+        mut targets: Vec<TargetDetails>,
+        first: Option<TargetDetails>,
+    ) -> (Vec<TargetDetails>, i32) {
         let mut streak = vec![];
         let mut failed = 0;
         targets.reverse();
@@ -50,7 +54,9 @@ impl Target {
             match targets_map.get(&last) {
                 Some(target) => {
                     if target.date.date_naive() == last {
-                        if habit.allow_skip && matches!(target.clone().target_type, TargetType::Skip) {
+                        if habit.allow_skip
+                            && matches!(target.clone().target_type, TargetType::Skip)
+                        {
                             skips.push(target);
                         } else if matches!(target.clone().target_type, TargetType::Done) {
                             started = true;
@@ -69,8 +75,7 @@ impl Target {
                 }
             }
             last -= Duration::days(1);
-        };
-
+        }
 
         streak.reverse();
         return (streak, failed);
@@ -136,4 +141,3 @@ pub enum TargetType {
     Skip,
     Empty,
 }
-

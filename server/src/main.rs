@@ -1,15 +1,14 @@
 use std::env::{set_var, var};
 
-use actix_web::{App, HttpServer, web::Data};
+use actix_cors::Cors;
 use actix_web::{http::header, middleware::Logger};
+use actix_web::{web::Data, App, HttpServer};
 use dotenv::dotenv;
 use mongodb::Client;
 
-use actix_cors::Cors;
-
-mod routes;
 mod models;
 mod repository;
+mod routes;
 
 static DB_NAME: &str = "dev";
 
@@ -24,16 +23,17 @@ async fn main() -> std::io::Result<()> {
     };
     let client = Client::with_uri_str(uri).await.unwrap();
 
-
     HttpServer::new(move || {
         App::new()
-            .wrap(Cors::default()
-                .allowed_origin("http://localhost:3000")
-                .allowed_methods(vec!["GET", "POST"])
-                .allowed_headers(vec![header::AUTHORIZATION, header::ACCEPT])
-                .allowed_header(header::CONTENT_TYPE)
-                .supports_credentials()
-                .max_age(3600))
+            .wrap(
+                Cors::default()
+                    .allowed_origin("http://localhost:3000")
+                    .allowed_methods(vec!["GET", "POST"])
+                    .allowed_headers(vec![header::AUTHORIZATION, header::ACCEPT])
+                    .allowed_header(header::CONTENT_TYPE)
+                    .supports_credentials()
+                    .max_age(3600),
+            )
             .wrap(Logger::default())
             .app_data(Data::new(client.clone()))
             .service(routes::habits::get_all)
@@ -41,7 +41,7 @@ async fn main() -> std::io::Result<()> {
             .service(routes::habits::delete)
             .service(routes::targets::create)
     })
-        .bind(("127.0.0.1", 8080))?
-        .run()
-        .await
+    .bind(("127.0.0.1", 8080))?
+    .run()
+    .await
 }
