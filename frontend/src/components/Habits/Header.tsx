@@ -61,13 +61,12 @@ const CreateHabitModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
     const [allowSkip, setAllowSkip] = useState(false);
 
     const createHabit = useMutation({
-        mutationFn: (data: HabitData) => {
-            return axios
+        mutationFn: (data: HabitData) =>
+            axios
                 .post<Habit>('http://localhost:8080/habits', data)
                 .then((res) => res.data)
                 .then((newHabit) => setHabits((prev) => [newHabit, ...prev]))
-                .finally(() => onClose());
-        },
+                .finally(() => onClose()),
     });
     const handleSubmit = () => {
         createHabit.mutate({

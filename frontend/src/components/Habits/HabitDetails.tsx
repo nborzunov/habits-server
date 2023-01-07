@@ -55,22 +55,24 @@ const HabitDetails = () => {
                             startDate={habit.currentStreakStartDate}
                         />
                     </GridItem>
-                    <GridItem gridArea='1 / 19 / 5 / 26'>
-                        <Box
-                            borderRadius='xl'
-                            borderColor='gray.200'
-                            borderWidth='2px'
-                            p='4'
-                            height='390px'
-                            display='flex'
-                            justifyContent='center'
-                        >
-                            <TargetChart
-                                completed={habit.completedTargets}
-                                failed={habit.failedTargets}
-                            />
-                        </Box>
-                    </GridItem>
+                    {habit.completedTargets || habit.failedTargets ? (
+                        <GridItem gridArea='1 / 19 / 5 / 26'>
+                            <Box
+                                borderRadius='xl'
+                                borderColor='gray.200'
+                                borderWidth='2px'
+                                p='4'
+                                height='390px'
+                                display='flex'
+                                justifyContent='center'
+                            >
+                                <TargetChart
+                                    completed={habit.completedTargets}
+                                    failed={habit.failedTargets}
+                                />
+                            </Box>
+                        </GridItem>
+                    ) : null}
                     <GridItem rowSpan={2} colStart={1} colSpan={9}>
                         <Statistics
                             icon={Icons.Complete}
@@ -96,7 +98,6 @@ const HabitDetails = () => {
                             borderWidth='2px'
                             p='2'
                             display='flex'
-                            width='100%'
                             justifyContent='center'
                         >
                             <TargetCalendarContext.Provider
