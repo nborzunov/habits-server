@@ -69,7 +69,7 @@ const Statistics = ({
                             borderRadius='8'
                             p='2'
                         >
-                            From {dayjs(startDate).subtract(1, 'day').format('MMM DD, YYYY')}
+                            From {dayjs(startDate).format('MMM DD, YYYY')}
                         </Text>
                     </Flex>
                 )}

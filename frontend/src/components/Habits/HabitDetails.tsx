@@ -1,7 +1,7 @@
 import { Box, Grid, GridItem, Heading } from '@chakra-ui/react';
 import Icons from '~/services/Icons';
 import Statistics from '~/components/Habits/Statistics';
-import TargetCalendar from '~/components/Dashboard/TargetCalendar';
+import { TargetCalendar, TargetCalendarContext } from '~/components/Dashboard/TargetCalendar';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import TargetChart from '~/components/Habits/TargetChart';
 import { habitsState, selectedHabitState } from '~/store/atoms';
@@ -39,6 +39,7 @@ const HabitDetails = () => {
             targetType: newType,
         });
     };
+
     return (
         <Box>
             <Heading as='h3' px={2} size='md' mb={4}>
@@ -64,7 +65,10 @@ const HabitDetails = () => {
                             display='flex'
                             justifyContent='center'
                         >
-                            <TargetChart />
+                            <TargetChart
+                                completed={habit.completedTargets}
+                                failed={habit.failedTargets}
+                            />
                         </Box>
                     </GridItem>
                     <GridItem rowSpan={2} colStart={1} colSpan={9}>
@@ -95,11 +99,14 @@ const HabitDetails = () => {
                             width='100%'
                             justifyContent='center'
                         >
-                            <TargetCalendar
-                                targets={habit.targets}
-                                habit={habit}
-                                onCellClick={handleCalendarCellClick}
-                            />
+                            <TargetCalendarContext.Provider
+                                value={{
+                                    habit,
+                                    onCellClick: handleCalendarCellClick,
+                                }}
+                            >
+                                <TargetCalendar targets={habit.targets} />
+                            </TargetCalendarContext.Provider>
                         </Box>
                     </GridItem>
                 </Grid>

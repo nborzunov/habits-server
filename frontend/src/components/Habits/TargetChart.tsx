@@ -1,16 +1,16 @@
 import { useTheme } from '@chakra-ui/react';
 import { Doughnut } from 'react-chartjs-2';
-import { Chart, ArcElement, Tooltip, Legend, Title } from 'chart.js';
+import { ArcElement, Chart, Legend, Title, Tooltip } from 'chart.js';
 
 Chart.register(ArcElement, Tooltip, Legend, Title);
 
-const TargetChart = () => {
+const TargetChart = ({ completed, failed }: { completed: number; failed: number }) => {
     const theme = useTheme();
     const data = {
         labels: ['Completed', 'Failed'],
         datasets: [
             {
-                data: [12, 1],
+                data: [completed, failed],
                 backgroundColor: [theme.colors.green[400], theme.colors.red[400]],
                 hoverBackgroundColor: [theme.colors.green[500], theme.colors.red[500]],
             },

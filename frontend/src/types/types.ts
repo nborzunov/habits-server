@@ -5,11 +5,6 @@ export enum Periodicity {
     Custom = 'custom',
 }
 
-export enum ActivityType {
-    Boolean = 'boolean',
-    Counter = 'counter',
-}
-
 export enum GoalType {
     Times = 'times',
     Mins = 'mins',
@@ -20,9 +15,6 @@ export interface Habit {
     title: string;
     periodicity: Periodicity;
     periodicityValue?: string;
-    activityType: ActivityType;
-    activityCounterValue?: number;
-
     goal: number;
     goalType: GoalType;
     createDate: Date;
@@ -35,10 +27,16 @@ export interface Habit {
     failedTargets: number;
     totalTargets: number;
     allowSkip: boolean;
-
     targets: Target[];
+}
 
-    selected?: boolean;
+export interface HabitData {
+    title: string;
+    periodicity: Periodicity;
+    periodicityValue?: string;
+    goal: number;
+    goalType: GoalType;
+    allowSkip: boolean;
 }
 
 export interface Target {
@@ -53,3 +51,5 @@ export enum TargetType {
     Skip = 'skip',
     Empty = 'empty',
 }
+
+

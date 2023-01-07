@@ -1,6 +1,6 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import Dashboard from '~/components/Dashboard/Dashboard';
-import Habits from '~/components/Habits/Habits';
+import HabitsPage from '~/components/Habits/HabitsPage';
 import Layout from '~/components/Layout/Layout';
 
 function App() {
@@ -9,7 +9,7 @@ function App() {
             <Routes>
                 <Route index element={<div></div>} />
                 <Route path='/' element={<Layout />}>
-                    <Route path='habits' element={<Habits />} />
+                    <Route path='habits' element={<HabitsPage />} />
                     <Route path='dashboard' element={<Dashboard />} />
                 </Route>
             </Routes>

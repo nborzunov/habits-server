@@ -1,6 +1,5 @@
 import { Box, Flex, Heading, Icon, IconButton, Select, Text } from '@chakra-ui/react';
 import Icons from '~/services/Icons';
-import TargetCalendar from './TargetCalendar';
 
 const Dashboard = () => {
     // TODO
@@ -34,7 +33,6 @@ const Dashboard = () => {
                     />
                 </Flex>
             </Flex>
-            <TargetCalendar />
         </Box>
     );
 };
