@@ -1,14 +1,23 @@
 use std::iter::Iterator;
 use std::str::FromStr;
 
-use actix_web::{delete, get, post, put, web, HttpResponse};
+use actix_web::{delete, get, post, put, web, HttpResponse, Scope};
 use mongodb::Client;
 
 use crate::models::habits::{Habit, HabitData, HabitDetails};
 use crate::models::targets::TargetDetails;
 use crate::repository;
 
-#[get("/habits")]
+pub fn routes() -> Scope {
+    web::scope("/habits")
+        .service(get_all)
+        .service(create)
+        .service(edit)
+        .service(delete)
+        .service(archive)
+}
+
+#[get("/")]
 pub async fn get_all(client: web::Data<Client>) -> HttpResponse {
     let habits: Vec<Habit> = repository::habits::get_all(client.clone()).await;
 
@@ -24,7 +33,7 @@ pub async fn get_all(client: web::Data<Client>) -> HttpResponse {
     HttpResponse::Ok().json(result)
 }
 
-#[post("/habits")]
+#[post("/")]
 pub async fn create(client: web::Data<Client>, form: web::Json<HabitData>) -> HttpResponse {
     let res = repository::habits::create(client.clone(), Habit::new(&form.into_inner())).await;
 
@@ -39,7 +48,7 @@ pub async fn create(client: web::Data<Client>, form: web::Json<HabitData>) -> Ht
     }
 }
 
-#[put("/habits/{habit_id}")]
+#[put("/{habit_id}")]
 pub async fn edit(
     client: web::Data<Client>,
     path: web::Path<String>,
@@ -55,7 +64,7 @@ pub async fn edit(
     HttpResponse::Ok().json(habit)
 }
 
-#[delete("/habits/{habit_id}")]
+#[delete("/{habit_id}")]
 pub async fn delete(client: web::Data<Client>, path: web::Path<String>) -> HttpResponse {
     let res = repository::habits::delete(client, path.into_inner()).await;
 
@@ -65,7 +74,7 @@ pub async fn delete(client: web::Data<Client>, path: web::Path<String>) -> HttpR
     }
 }
 
-#[put("/habits/{habit_id}/archive")]
+#[put("/{habit_id}/archive")]
 pub async fn archive(client: web::Data<Client>, path: web::Path<String>) -> HttpResponse {
     let res = repository::habits::archive(client, path.into_inner()).await;
     match res {

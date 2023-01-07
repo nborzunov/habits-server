@@ -1,8 +1,12 @@
-use actix_web::{post, web, HttpResponse};
+use actix_web::{post, web, HttpResponse, Scope};
 use mongodb::Client;
 
 use crate::models::targets::{Target, TargetData};
 use crate::repository;
+
+pub fn routes() -> Scope {
+    web::scope("/habits").service(create)
+}
 
 #[post("/targets")]
 pub async fn create(client: web::Data<Client>, form: web::Json<TargetData>) -> HttpResponse {

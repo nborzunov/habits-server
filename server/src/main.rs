@@ -36,12 +36,7 @@ async fn main() -> std::io::Result<()> {
             )
             .wrap(Logger::default())
             .app_data(Data::new(client.clone()))
-            .service(routes::habits::get_all)
-            .service(routes::habits::create)
-            .service(routes::habits::edit)
-            .service(routes::habits::delete)
-            .service(routes::habits::archive)
-            .service(routes::targets::create)
+            .service(routes::routes())
     })
     .bind(("127.0.0.1", 8080))?
     .run()
