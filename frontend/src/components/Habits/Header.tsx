@@ -66,7 +66,14 @@ const CreateHabitModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                 .post<Habit>('http://localhost:8080/habits', data)
                 .then((res) => res.data)
                 .then((newHabit) => setHabits((prev) => [newHabit, ...prev]))
-                .finally(() => onClose()),
+                .finally(() => {
+                    setTitle('');
+                    setGoal(1);
+                    setGoalType(GoalType.Times);
+                    setPeriodicity(Periodicity.Daily);
+                    setAllowSkip(false);
+                    onClose();
+                }),
     });
     const handleSubmit = () => {
         createHabit.mutate({

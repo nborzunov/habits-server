@@ -84,26 +84,45 @@ const HabitItem = ({ habit }: { habit: Habit }) => {
     const selected = selectedHabitId && habit.id === selectedHabitId;
 
     const setHabits = useSetRecoilState(habitsState);
-    const setSelectedHabit = useSetRecoilState(selectedHabitIdState);
 
     const handleEdit = () => {};
 
     const deleteHabit = useMutation({
         mutationFn: () => {
             return axios
-                .delete<Habit>(`http://localhost:8080/habits/${habit.id}`, {})
+                .delete<Habit>(`http://localhost:8080/habits/${habit.id}`)
                 .then((res) => res.data)
                 .then(() => {
                     setHabits((prev) => prev.filter((h) => h.id !== habit.id));
-                    setSelectedHabit(null);
+                    if (selectedHabitId === habit.id) {
+                        setSelectedHabitId(null);
+                    }
                 })
                 .finally(() => onCloseDeleteConfirm());
         },
     });
+
+    const archiveHabit = useMutation({
+        mutationFn: () => {
+            return axios
+                .put<Habit>(`http://localhost:8080/habits/${habit.id}/archive`)
+                .then((res) => res.data)
+                .then(() => {
+                    setHabits((prev) => prev.filter((h) => h.id !== habit.id));
+                    if (selectedHabitId === habit.id) {
+                        setSelectedHabitId(null);
+                    }
+                })
+                .finally(() => onCloseDeleteConfirm());
+        },
+    });
+
     const handleDelete = () => {
         deleteHabit.mutate();
     };
-    const handleArchive = () => {};
+    const handleArchive = () => {
+        archiveHabit.mutate();
+    };
 
     const {
         isOpen: isOpenDeleteConfirm,
