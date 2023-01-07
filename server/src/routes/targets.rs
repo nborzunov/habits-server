@@ -14,6 +14,3 @@ pub async fn create(client: web::Data<Client>, form: web::Json<TargetData>) -> H
         Err(_) => HttpResponse::InternalServerError().body("Server error"),
     }
 }
-
-// TODO: add target
-// TODO: change target type

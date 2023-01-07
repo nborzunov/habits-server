@@ -17,7 +17,12 @@ pub async fn get_all(client: web::Data<Client>) -> Vec<Habit> {
     let docs: Vec<RawDocumentBuf> = client
         .database(DB_NAME)
         .collection(COLL_NAME)
-        .find(None, None)
+        .find(
+            doc! {
+                "archived": false
+            },
+            None,
+        )
         .await
         .expect("Failed to get habits")
         .try_collect()
@@ -74,5 +79,19 @@ pub async fn delete(client: web::Data<Client>, id: String) -> Result<(), ()> {
         )
         .await
         .expect("Failed to delete habit");
+    Ok(())
+}
+
+pub async fn archive(client: web::Data<Client>, id: String) -> Result<(), ()> {
+    client
+        .database(DB_NAME)
+        .collection::<Habit>(COLL_NAME)
+        .update_one(
+            doc! { "_id": mongodb::bson::oid::ObjectId::from_str(&id).unwrap() },
+            doc! { "$set": { "archived": true } },
+            None,
+        )
+        .await
+        .expect("Failed to archive habit");
     Ok(())
 }

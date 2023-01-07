@@ -1,6 +1,6 @@
 use std::iter::Iterator;
 
-use actix_web::{delete, get, post, web, HttpResponse};
+use actix_web::{delete, get, post, put, web, HttpResponse};
 use mongodb::Client;
 
 use crate::models::habits::{Habit, HabitData, HabitDetails};
@@ -44,6 +44,15 @@ pub async fn delete(client: web::Data<Client>, path: web::Path<String>) -> HttpR
 
     match res {
         Ok(_) => HttpResponse::Ok().body("habit deleted"),
+        Err(_) => HttpResponse::InternalServerError().body("Server error"),
+    }
+}
+
+#[put("/habits/{habit_id}/archive")]
+pub async fn archive(client: web::Data<Client>, path: web::Path<String>) -> HttpResponse {
+    let res = repository::habits::archive(client, path.into_inner()).await;
+    match res {
+        Ok(_) => HttpResponse::Ok().body("habit archived"),
         Err(_) => HttpResponse::InternalServerError().body("Server error"),
     }
 }

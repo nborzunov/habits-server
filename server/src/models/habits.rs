@@ -16,6 +16,7 @@ pub struct Habit {
     goal: i32,
     goal_type: GoalType,
     pub allow_skip: bool,
+    archived: bool,
 }
 
 impl Habit {
@@ -29,6 +30,7 @@ impl Habit {
             goal: data.goal,
             goal_type: data.goal_type.clone(),
             allow_skip: data.allow_skip,
+            archived: false,
         }
     }
 }
@@ -41,18 +43,17 @@ pub struct HabitDetails {
     periodicity: Periodicity,
     periodicity_value: Option<DaysSequence>,
     created_date: DateTime<Utc>,
-
     goal: i32,
     goal_type: GoalType,
     allow_skip: bool,
     start_date: Option<DateTime<Utc>>,
     completed_today: bool,
-
     current_streak: i32,
     current_streak_start_date: Option<DateTime<Utc>>,
     completed_targets: i32,
     failed_targets: i32,
     total_targets: i32,
+    archived: bool,
 
     pub targets: Vec<TargetDetails>,
 }
@@ -83,8 +84,8 @@ impl HabitDetails {
             goal_type: h.goal_type.clone(),
             allow_skip: h.allow_skip,
             targets: targets.clone(),
+            archived: h.archived,
             completed_today,
-
             current_streak: current_streak_targets.len() as i32,
             current_streak_start_date: match current_streak_targets
                 .iter()

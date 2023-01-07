@@ -39,6 +39,7 @@ async fn main() -> std::io::Result<()> {
             .service(routes::habits::get_all)
             .service(routes::habits::create)
             .service(routes::habits::delete)
+            .service(routes::habits::archive)
             .service(routes::targets::create)
     })
     .bind(("127.0.0.1", 8080))?
