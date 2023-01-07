@@ -22,13 +22,14 @@ import {
     useDisclosure,
 } from '@chakra-ui/react';
 import Icons from '~/services/Icons';
-import { GoalType, Habit } from '~/types/types';
+import { GoalType, Habit, HabitData } from '~/types/types';
 import Header from '~/components/Habits/Header';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import { completedHabitsState, habitsState, selectedHabitIdState } from '~/store/atoms';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { useRef } from 'react';
+import EditHabitDialog from '~/components/Habits/EditHabitDialog';
 
 const HabitsList = () => {
     const [habits, setHabits] = useRecoilState(habitsState);
@@ -85,7 +86,17 @@ const HabitItem = ({ habit }: { habit: Habit }) => {
 
     const setHabits = useSetRecoilState(habitsState);
 
-    const handleEdit = () => {};
+    const editHabit = useMutation({
+        mutationFn: (formData: HabitData) => {
+            return axios
+                .put<Habit>(`http://localhost:8080/habits/${habit.id}`, formData)
+                .then((res) => res.data)
+                .then((newHabit) => {
+                    setHabits((prev) => prev.map((h) => (h.id === habit.id ? newHabit : h)));
+                })
+                .finally(() => onCloseEditHabit());
+        },
+    });
 
     const deleteHabit = useMutation({
         mutationFn: () => {
@@ -117,6 +128,10 @@ const HabitItem = ({ habit }: { habit: Habit }) => {
         },
     });
 
+    const handleEdit = (h: HabitData) => {
+        editHabit.mutate(h);
+    };
+
     const handleDelete = () => {
         deleteHabit.mutate();
     };
@@ -130,6 +145,13 @@ const HabitItem = ({ habit }: { habit: Habit }) => {
         onClose: onCloseDeleteConfirm,
     } = useDisclosure();
     const cancelRef = useRef();
+
+    const {
+        isOpen: isOpenEditHabit,
+        onOpen: onOpenEditHabit,
+        onClose: onCloseEditHabit,
+    } = useDisclosure();
+
     return (
         <>
             <Box
@@ -165,10 +187,68 @@ const HabitItem = ({ habit }: { habit: Habit }) => {
                         size='sm'
                         onClick={(e) => e.stopPropagation()}
                     />
-                    <MenuList>
-                        <MenuItem onClick={handleEdit}>Edit</MenuItem>
-                        <MenuItem onClick={onOpenDeleteConfirm}>Delete</MenuItem>
-                        <MenuItem onClick={handleArchive}>Archive</MenuItem>
+                    <MenuList p={0}>
+                        <MenuItem
+                            onClick={onOpenEditHabit}
+                            pl='4'
+                            rounded='md'
+                            py='3'
+                            cursor='pointer'
+                            color='gray.600'
+                            _hover={{
+                                bg: 'purple.300',
+                                color: 'whiteAlpha.900',
+                            }}
+                            role='group'
+                            fontWeight='semibold'
+                            transition='.15s ease'
+                            onMouseOver={(e) => e.stopPropagation()}
+                        >
+                            <Flex alignItems={'center'} align='center'>
+                                <Icon as={Icons.Edit} mr={2} />
+                                <Text>Edit</Text>
+                            </Flex>
+                        </MenuItem>
+                        <MenuItem
+                            onClick={onOpenDeleteConfirm}
+                            pl='4'
+                            rounded='md'
+                            py='3'
+                            cursor='pointer'
+                            color='gray.600'
+                            _hover={{
+                                bg: 'purple.300',
+                                color: 'whiteAlpha.900',
+                            }}
+                            role='group'
+                            fontWeight='semibold'
+                            transition='.15s ease'
+                        >
+                            <Flex alignItems={'center'}>
+                                <Icon as={Icons.Delete} mr={2} />
+                                <Text>Delete</Text>
+                            </Flex>
+                        </MenuItem>
+                        <MenuItem
+                            onClick={handleArchive}
+                            pl='4'
+                            rounded='md'
+                            py='3'
+                            cursor='pointer'
+                            color='gray.600'
+                            _hover={{
+                                bg: 'purple.300',
+                                color: 'whiteAlpha.900',
+                            }}
+                            role='group'
+                            fontWeight='semibold'
+                            transition='.15s ease'
+                        >
+                            <Flex alignItems={'center'}>
+                                <Icon as={Icons.Archive} mr={2} />
+                                <Text>Archive</Text>
+                            </Flex>
+                        </MenuItem>
                     </MenuList>
                 </Menu>
             </Box>
@@ -199,6 +279,13 @@ const HabitItem = ({ habit }: { habit: Habit }) => {
                     </AlertDialogContent>
                 </AlertDialogOverlay>
             </AlertDialog>
+
+            <EditHabitDialog
+                isOpen={isOpenEditHabit}
+                onClose={onCloseEditHabit}
+                onSubmit={handleEdit}
+                initialState={habit}
+            />
         </>
     );
 };
