@@ -75,7 +75,7 @@ pub async fn edit(client: web::Data<Client>, id: String, habit: HabitData) -> Up
         .database(DB_NAME)
         .collection::<Habit>(COLL_NAME)
         .update_one(
-            doc! {"_id": mongodb::bson::oid::ObjectId::from_str(&id).unwrap() },
+            doc! {"_id": ObjectId::from_str(&id).unwrap() },
             doc! {"$set": bson::to_bson(&habit).unwrap() },
             None,
         )
@@ -87,10 +87,7 @@ pub async fn delete(client: web::Data<Client>, id: String) -> Result<(), ()> {
     client
         .database(DB_NAME)
         .collection::<Habit>(COLL_NAME)
-        .delete_one(
-            doc! {"_id": mongodb::bson::oid::ObjectId::from_str(&id).unwrap() },
-            None,
-        )
+        .delete_one(doc! {"_id": ObjectId::from_str(&id).unwrap() }, None)
         .await
         .expect("Failed to delete habit");
     Ok(())
@@ -101,7 +98,7 @@ pub async fn archive(client: web::Data<Client>, id: String) -> Result<(), ()> {
         .database(DB_NAME)
         .collection::<Habit>(COLL_NAME)
         .update_one(
-            doc! { "_id": mongodb::bson::oid::ObjectId::from_str(&id).unwrap() },
+            doc! { "_id": ObjectId::from_str(&id).unwrap() },
             doc! { "$set": { "archived": true } },
             None,
         )

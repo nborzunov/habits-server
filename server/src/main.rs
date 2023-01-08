@@ -6,6 +6,7 @@ use actix_web::{web::Data, App, HttpServer};
 use dotenv::dotenv;
 use mongodb::Client;
 
+mod middlewares;
 mod models;
 mod repository;
 mod routes;

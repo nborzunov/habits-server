@@ -1,6 +1,7 @@
 use actix_web::{post, web, HttpResponse, Scope};
 use mongodb::Client;
 
+use crate::middlewares::auth::AuthenticationService;
 use crate::models::targets::{Target, TargetData};
 use crate::repository;
 
@@ -9,7 +10,11 @@ pub fn routes() -> Scope {
 }
 
 #[post("/targets")]
-pub async fn create(client: web::Data<Client>, form: web::Json<TargetData>) -> HttpResponse {
+pub async fn create(
+    _: AuthenticationService,
+    client: web::Data<Client>,
+    form: web::Json<TargetData>,
+) -> HttpResponse {
     let res = repository::targets::create(client.clone(), Target::new(&form.clone())).await;
 
     match res {

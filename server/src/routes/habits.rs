@@ -4,6 +4,7 @@ use std::str::FromStr;
 use actix_web::{delete, get, post, put, web, HttpResponse, Scope};
 use mongodb::Client;
 
+use crate::middlewares::auth::AuthenticationService;
 use crate::models::habits::{Habit, HabitData, HabitDetails};
 use crate::models::targets::TargetDetails;
 use crate::repository;
@@ -18,7 +19,7 @@ pub fn routes() -> Scope {
 }
 
 #[get("/")]
-pub async fn get_all(client: web::Data<Client>) -> HttpResponse {
+pub async fn get_all(_: AuthenticationService, client: web::Data<Client>) -> HttpResponse {
     let habits: Vec<Habit> = repository::habits::get_all(client.clone()).await;
 
     let result = futures::future::join_all(habits.iter().map(|h| async {
@@ -34,7 +35,11 @@ pub async fn get_all(client: web::Data<Client>) -> HttpResponse {
 }
 
 #[post("/")]
-pub async fn create(client: web::Data<Client>, form: web::Json<HabitData>) -> HttpResponse {
+pub async fn create(
+    _: AuthenticationService,
+    client: web::Data<Client>,
+    form: web::Json<HabitData>,
+) -> HttpResponse {
     let res = repository::habits::create(client.clone(), Habit::new(&form.into_inner())).await;
 
     match res {
@@ -50,6 +55,7 @@ pub async fn create(client: web::Data<Client>, form: web::Json<HabitData>) -> Ht
 
 #[put("/{habit_id}")]
 pub async fn edit(
+    _: AuthenticationService,
     client: web::Data<Client>,
     path: web::Path<String>,
     form: web::Json<HabitData>,
@@ -65,7 +71,11 @@ pub async fn edit(
 }
 
 #[delete("/{habit_id}")]
-pub async fn delete(client: web::Data<Client>, path: web::Path<String>) -> HttpResponse {
+pub async fn delete(
+    _: AuthenticationService,
+    client: web::Data<Client>,
+    path: web::Path<String>,
+) -> HttpResponse {
     let res = repository::habits::delete(client, path.into_inner()).await;
 
     match res {
@@ -75,7 +85,11 @@ pub async fn delete(client: web::Data<Client>, path: web::Path<String>) -> HttpR
 }
 
 #[put("/{habit_id}/archive")]
-pub async fn archive(client: web::Data<Client>, path: web::Path<String>) -> HttpResponse {
+pub async fn archive(
+    _: AuthenticationService,
+    client: web::Data<Client>,
+    path: web::Path<String>,
+) -> HttpResponse {
     let res = repository::habits::archive(client, path.into_inner()).await;
     match res {
         Ok(_) => HttpResponse::Ok().body("habit archived"),
