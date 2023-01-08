@@ -7,7 +7,7 @@ import TargetChart from '~/components/Habits/TargetChart';
 import { habitsState, selectedHabitState } from '~/store/atoms';
 import { Habit, TargetType } from '~/types/types';
 import { useMutation } from '@tanstack/react-query';
-import axios from 'axios';
+import api from '~/services/api';
 
 const HabitDetails = () => {
     const habit = useRecoilValue(selectedHabitState);
@@ -20,8 +20,8 @@ const HabitDetails = () => {
             date: Date;
             targetType: string;
         }) => {
-            return axios
-                .post<Habit>('http://localhost:8080/targets', data)
+            return api
+                .post<Habit>('/targets/', data)
                 .then((res) => res.data)
                 .then((newHabit) =>
                     setHabits((prev) => prev.map((h) => (h.id !== newHabit.id ? h : newHabit))),

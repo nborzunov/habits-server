@@ -1,7 +1,10 @@
 import {
     FiCheck,
+    FiChevronLeft,
     FiChevronsUp,
     FiEdit3,
+    FiEye,
+    FiEyeOff,
     FiHome,
     FiInbox,
     FiMenu,
@@ -27,6 +30,9 @@ const Icons = {
     Edit: FiEdit3,
     Delete: MdDeleteOutline,
     Archive: MdOutlineArchive,
+    Show: FiEye,
+    Hide: FiEyeOff,
+    Back: FiChevronLeft,
 };
 
 export default Icons;

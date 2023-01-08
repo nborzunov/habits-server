@@ -1,5 +1,5 @@
 import { atom, selector } from 'recoil';
-import { Habit } from '~/types/types';
+import { Habit, User } from '~/types/types';
 
 export const habitsState = atom<Habit[]>({
     key: 'habitsState',
@@ -44,4 +44,15 @@ export const selectedHabitState = selector({
         const selectedId = get(selectedHabitIdState);
         return list.find((habit) => habit.id == selectedId);
     },
+});
+
+export const activeUserState = atom<User | null>({
+    key: 'activeUserState',
+    default: null,
+});
+
+export const tokenState = atom<String | null>({
+    key: 'tokenState',
+    default: null,
+    effects: [localStorageEffect('authToken')],
 });

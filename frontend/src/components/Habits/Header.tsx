@@ -2,10 +2,10 @@ import { Button, Flex, Heading, Icon, useDisclosure } from '@chakra-ui/react';
 import Icons from '~/services/Icons';
 import { Habit, HabitData } from '~/types/types';
 import { useMutation } from '@tanstack/react-query';
-import axios from 'axios';
 import { useSetRecoilState } from 'recoil';
 import { habitsState } from '~/store/atoms';
 import EditHabitDialog from '~/components/Habits/EditHabitDialog';
+import api from '~/services/api';
 
 const Header = () => {
     const { isOpen, onOpen, onClose } = useDisclosure();
@@ -14,8 +14,8 @@ const Header = () => {
 
     const createHabit = useMutation({
         mutationFn: (data: HabitData) =>
-            axios
-                .post<Habit>('http://localhost:8080/habits', data)
+            api
+                .post<Habit>('/habits/', data)
                 .then((res) => res.data)
                 .then((newHabit) => setHabits((prev) => [newHabit, ...prev]))
                 .finally(() => {

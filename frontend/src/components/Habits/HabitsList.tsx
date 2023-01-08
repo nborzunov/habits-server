@@ -25,27 +25,34 @@ import Icons from '~/services/Icons';
 import { GoalType, Habit, HabitData } from '~/types/types';
 import Header from '~/components/Habits/Header';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
-import { completedHabitsState, habitsState, selectedHabitIdState } from '~/store/atoms';
+import {
+    activeUserState,
+    completedHabitsState,
+    habitsState,
+    selectedHabitIdState,
+} from '~/store/atoms';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import axios from 'axios';
 import { useRef } from 'react';
 import EditHabitDialog from '~/components/Habits/EditHabitDialog';
+import api from '~/services/api';
 
 const HabitsList = () => {
+    const activeUser = useRecoilValue(activeUserState);
     const [habits, setHabits] = useRecoilState(habitsState);
     const completedHabits = useRecoilValue(completedHabitsState);
 
     const { isLoading } = useQuery<Habit[]>({
         queryKey: ['habits'],
         queryFn: () =>
-            axios
-                .get<Habit[]>('http://localhost:8080/habits')
+            api
+                .get<Habit[]>('/habits/')
                 .then((res) => res.data)
                 .then((data) => {
                     setHabits(data);
                     return data;
                 }),
         initialData: [],
+        enabled: !!activeUser,
     });
 
     if (isLoading) return <div>Loading...</div>;
@@ -88,8 +95,8 @@ const HabitItem = ({ habit }: { habit: Habit }) => {
 
     const editHabit = useMutation({
         mutationFn: (formData: HabitData) => {
-            return axios
-                .put<Habit>(`http://localhost:8080/habits/${habit.id}`, formData)
+            return api
+                .put<Habit>(`/habits/${habit.id}`, formData)
                 .then((res) => res.data)
                 .then((newHabit) => {
                     setHabits((prev) => prev.map((h) => (h.id === habit.id ? newHabit : h)));
@@ -100,8 +107,8 @@ const HabitItem = ({ habit }: { habit: Habit }) => {
 
     const deleteHabit = useMutation({
         mutationFn: () => {
-            return axios
-                .delete<Habit>(`http://localhost:8080/habits/${habit.id}`)
+            return api
+                .delete<Habit>(`/habits/${habit.id}`)
                 .then((res) => res.data)
                 .then(() => {
                     setHabits((prev) => prev.filter((h) => h.id !== habit.id));
@@ -115,8 +122,8 @@ const HabitItem = ({ habit }: { habit: Habit }) => {
 
     const archiveHabit = useMutation({
         mutationFn: () => {
-            return axios
-                .put<Habit>(`http://localhost:8080/habits/${habit.id}/archive`)
+            return api
+                .put<Habit>(`/habits/${habit.id}/archive`)
                 .then((res) => res.data)
                 .then(() => {
                     setHabits((prev) => prev.filter((h) => h.id !== habit.id));
