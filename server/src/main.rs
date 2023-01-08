@@ -9,6 +9,7 @@ use mongodb::Client;
 mod models;
 mod repository;
 mod routes;
+mod services;
 
 static DB_NAME: &str = "dev";
 
