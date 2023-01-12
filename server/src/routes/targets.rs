@@ -6,16 +6,21 @@ use crate::models::targets::{Target, TargetData};
 use crate::repository;
 
 pub fn routes() -> Scope {
-    web::scope("/habits").service(create)
+    web::scope("/targets").service(create)
 }
 
-#[post("/targets")]
+#[post("/")]
 pub async fn create(
-    _: AuthenticationService,
+    user: AuthenticationService,
     client: web::Data<Client>,
     form: web::Json<TargetData>,
 ) -> HttpResponse {
-    let res = repository::targets::create(client.clone(), Target::new(&form.clone())).await;
+    let res = repository::targets::create(
+        client.clone(),
+        user.0.id.unwrap(),
+        Target::new(&form.clone()),
+    )
+    .await;
 
     match res {
         Ok(_) => HttpResponse::Ok()

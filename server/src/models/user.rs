@@ -56,7 +56,7 @@ pub struct UserDetails {
 impl UserDetails {
     pub fn parse(u: &User) -> UserDetails {
         UserDetails {
-            id: u.id.clone().expect("Failed to parse user id").to_string(),
+            id: u.id.clone().unwrap().to_string(),
             username: u.username.clone(),
             email: u.email.clone(),
             full_name: u.full_name.clone(),

@@ -9,6 +9,7 @@ use crate::models::targets::{Target, TargetDetails, TargetType};
 pub struct Habit {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
+    pub user_id: ObjectId,
     title: String,
     periodicity: Periodicity,
     periodicity_value: Option<DaysSequence>,
@@ -20,9 +21,10 @@ pub struct Habit {
 }
 
 impl Habit {
-    pub fn new(data: &HabitData) -> Self {
+    pub fn new(data: &HabitData, user_id: ObjectId) -> Self {
         Habit {
             id: None,
+            user_id: user_id.clone(),
             title: data.title.clone(),
             periodicity: data.periodicity.clone(),
             periodicity_value: data.periodicity_value.clone(),
@@ -39,6 +41,7 @@ impl Habit {
 #[serde(rename_all = "camelCase")]
 pub struct HabitDetails {
     pub id: String,
+    pub user_id: String,
     title: String,
     periodicity: Periodicity,
     periodicity_value: Option<DaysSequence>,
@@ -74,7 +77,8 @@ impl HabitDetails {
         let total_targets = Target::get_total(&targets);
 
         HabitDetails {
-            id: h.id.clone().expect("Failed to parse habit id").to_string(),
+            id: h.id.clone().unwrap().to_string(),
+            user_id: h.id.clone().unwrap().to_string(),
             title: h.title.clone(),
             periodicity: h.periodicity.clone(),
             periodicity_value: h.periodicity_value.clone(),

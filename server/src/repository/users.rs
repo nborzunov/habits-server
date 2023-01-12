@@ -17,29 +17,26 @@ pub async fn create(client: web::Data<Client>, new_user: UserData) -> Result<Use
 
     let user_model = User::new(new_user, password_hash);
 
+    match get_by_username(client.clone(), user_model.clone().username.unwrap()).await {
+        Ok(_) => return Err("User already exists".to_string()),
+        Err(_) => (),
+    };
     // create validation for new user fields
-    match get_by_username(client.clone(), user_model.clone().username.unwrap())
+    let user_id = match client
+        .database(DB_NAME)
+        .collection::<User>(COLL_NAME)
+        .insert_one(user_model, None)
         .await
-        .unwrap()
     {
-        Some(_) => Err("User already exists".to_string()),
-        None => {
-            let user_id = client
-                .database(DB_NAME)
-                .collection::<User>(COLL_NAME)
-                .insert_one(user_model, None)
-                .await
-                .expect("Failed to create user")
-                .inserted_id;
-            Ok(get_by_id(client, user_id.as_object_id().unwrap())
-                .await
-                .unwrap())
-        }
-    }
+        Ok(res) => res.inserted_id.as_object_id().unwrap().clone(),
+        Err(_) => return Err("Failed to create user".to_string()),
+    };
+
+    get_by_id(client, user_id).await
 }
 
-pub async fn get_by_id(client: web::Data<Client>, id: ObjectId) -> Result<User, ()> {
-    let user = client
+pub async fn get_by_id(client: web::Data<Client>, id: ObjectId) -> Result<User, String> {
+    let user = match client
         .database(DB_NAME)
         .collection::<User>(COLL_NAME)
         .find_one(
@@ -49,17 +46,19 @@ pub async fn get_by_id(client: web::Data<Client>, id: ObjectId) -> Result<User, 
             None,
         )
         .await
-        .expect("Failed to find user")
-        .expect("User not found");
+    {
+        Ok(user) => user,
+        Err(_) => return Err("Failed to get user".to_string()),
+    };
 
-    Ok(user)
+    match user {
+        Some(user) => Ok(user),
+        None => Err("User not found".to_string()),
+    }
 }
 
-pub async fn get_by_username(
-    client: web::Data<Client>,
-    username: String,
-) -> mongodb::error::Result<Option<User>> {
-    client
+pub async fn get_by_username(client: web::Data<Client>, username: String) -> Result<User, String> {
+    let user = match client
         .database(DB_NAME)
         .collection::<User>(COLL_NAME)
         .find_one(
@@ -69,4 +68,13 @@ pub async fn get_by_username(
             None,
         )
         .await
+    {
+        Ok(user) => user,
+        Err(_) => return Err("Failed to get user".to_string()),
+    };
+
+    match user {
+        Some(user) => Ok(user),
+        None => Err("User not found".to_string()),
+    }
 }

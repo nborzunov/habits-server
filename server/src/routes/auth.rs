@@ -18,7 +18,6 @@ pub async fn login(client: Data<Client>, form: web::Json<LoginData>) -> HttpResp
 
     let user = repository::users::get_by_username(client.clone(), username.to_string())
         .await
-        .unwrap()
         .unwrap();
 
     let valid = hashing()

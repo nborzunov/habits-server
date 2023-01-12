@@ -1,7 +1,7 @@
 use std::iter::Iterator;
-use std::str::FromStr;
 
 use actix_web::{delete, get, post, put, web, HttpResponse, Scope};
+use mongodb::bson::oid::ObjectId;
 use mongodb::Client;
 
 use crate::middlewares::auth::AuthenticationService;
@@ -19,64 +19,82 @@ pub fn routes() -> Scope {
 }
 
 #[get("/")]
-pub async fn get_all(_: AuthenticationService, client: web::Data<Client>) -> HttpResponse {
-    let habits: Vec<Habit> = repository::habits::get_all(client.clone()).await;
+pub async fn get_all(user: AuthenticationService, client: web::Data<Client>) -> HttpResponse {
+    let habits = match repository::habits::get_all(client.clone(), user.0.id.unwrap()).await {
+        Ok(habits) => habits,
+        Err(err) => return HttpResponse::InternalServerError().body(err),
+    };
 
     let result = futures::future::join_all(habits.iter().map(|h| async {
-        let targets = repository::targets::get_all(client.clone(), &h.id.clone().unwrap()).await;
-        HabitDetails::parse(
-            h,
-            targets.iter().map(|t| TargetDetails::parse(&t)).collect(),
-        )
+        let targets =
+            match repository::targets::get_all(client.clone(), &h.id.clone().unwrap()).await {
+                Ok(targets) => targets.iter().map(|t| TargetDetails::parse(t)).collect(),
+                Err(err) => return Err(err),
+            };
+        Ok(HabitDetails::parse(h, targets))
     }))
-    .await;
+    .await
+    .into_iter()
+    .collect::<Result<Vec<HabitDetails>, String>>();
 
-    HttpResponse::Ok().json(result)
+    match result {
+        Ok(habits) => HttpResponse::Ok().json(habits),
+        Err(err) => return HttpResponse::InternalServerError().body(err),
+    }
 }
 
 #[post("/")]
 pub async fn create(
-    _: AuthenticationService,
+    user: AuthenticationService,
     client: web::Data<Client>,
     form: web::Json<HabitData>,
 ) -> HttpResponse {
-    let res = repository::habits::create(client.clone(), Habit::new(&form.into_inner())).await;
+    match repository::habits::create(
+        client.clone(),
+        Habit::new(&form.into_inner(), user.0.id.unwrap()),
+    )
+    .await
+    {
+        Ok(habit_id) => match repository::habits::get_details(client.clone(), habit_id).await {
+            Ok(habit) => HttpResponse::Ok().json(habit),
+            Err(err) => HttpResponse::InternalServerError().body(err),
+        },
 
-    match res {
-        Ok(habit_id) => {
-            let habit =
-                repository::habits::get_details(client.clone(), habit_id.as_object_id().unwrap())
-                    .await;
-            HttpResponse::Ok().json(habit)
-        }
         Err(_) => HttpResponse::InternalServerError().body("Server error"),
     }
 }
 
 #[put("/{habit_id}")]
 pub async fn edit(
-    _: AuthenticationService,
+    user: AuthenticationService,
     client: web::Data<Client>,
-    path: web::Path<String>,
+    path: web::Path<ObjectId>,
     form: web::Json<HabitData>,
 ) -> HttpResponse {
-    repository::habits::edit(client.clone(), path.clone(), form.into_inner()).await;
-    let habit = repository::habits::get_details(
+    match repository::habits::edit(
         client.clone(),
-        mongodb::bson::oid::ObjectId::from_str(&path.clone()).unwrap(),
+        user.0.id.unwrap(),
+        path.clone(),
+        form.into_inner(),
     )
-    .await;
+    .await
+    {
+        Ok(_) => {
+            let habit = repository::habits::get_details(client.clone(), path.clone()).await;
 
-    HttpResponse::Ok().json(habit)
+            HttpResponse::Ok().json(habit)
+        }
+        Err(err) => HttpResponse::InternalServerError().body(err),
+    }
 }
 
 #[delete("/{habit_id}")]
 pub async fn delete(
-    _: AuthenticationService,
+    user: AuthenticationService,
     client: web::Data<Client>,
-    path: web::Path<String>,
+    path: web::Path<ObjectId>,
 ) -> HttpResponse {
-    let res = repository::habits::delete(client, path.into_inner()).await;
+    let res = repository::habits::delete(client, user.0.id.unwrap(), path.clone()).await;
 
     match res {
         Ok(_) => HttpResponse::Ok().body("habit deleted"),
@@ -86,11 +104,11 @@ pub async fn delete(
 
 #[put("/{habit_id}/archive")]
 pub async fn archive(
-    _: AuthenticationService,
+    user: AuthenticationService,
     client: web::Data<Client>,
-    path: web::Path<String>,
+    path: web::Path<ObjectId>,
 ) -> HttpResponse {
-    let res = repository::habits::archive(client, path.into_inner()).await;
+    let res = repository::habits::archive(client, user.0.id.unwrap(), path.clone()).await;
     match res {
         Ok(_) => HttpResponse::Ok().body("habit archived"),
         Err(_) => HttpResponse::InternalServerError().body("Server error"),

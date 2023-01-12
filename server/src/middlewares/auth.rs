@@ -9,12 +9,12 @@ use futures::Future;
 use mongodb::bson::oid::ObjectId;
 use mongodb::Client;
 
-use crate::models::user::UserDetails;
+use crate::models::user::User;
 use crate::repository;
 use crate::services::hashing::hashing;
 
 #[derive(Debug)]
-pub struct AuthenticationService(UserDetails);
+pub struct AuthenticationService(pub User);
 
 impl FromRequest for AuthenticationService {
     type Error = Error;
@@ -38,7 +38,7 @@ impl FromRequest for AuthenticationService {
                 Ok(v) => {
                     repository::users::get_by_id(client, ObjectId::from_str(&v.claims.sub).unwrap())
                         .await
-                        .and_then(|u| Ok(AuthenticationService(UserDetails::parse(&u))))
+                        .and_then(|u| Ok(AuthenticationService(u)))
                         .map_err(|_| ErrorUnauthorized("DB error!").into())
                 }
                 Err(_) => return Err(ErrorUnauthorized("blocked!")),
