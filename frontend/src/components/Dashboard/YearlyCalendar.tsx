@@ -11,7 +11,7 @@ interface TargetCalendarContext {
 
 export const TargetCalendarContext = React.createContext<TargetCalendarContext>({});
 
-export const TargetCalendar = ({ size, targets }: { size?: 'sm' | 'md'; targets: Target[] }) => {
+export const YearlyCalendar = ({ size, targets }: { size?: 'sm' | 'md'; targets: Target[] }) => {
     const targetsMap = targets.reduce((acc, target) => {
         acc[dayjs(target.date).format('DD/MM/YYYY')] = target;
         return acc;
@@ -102,7 +102,7 @@ const Cell = ({
 
     const green = theme.colors.green;
 
-    const day = dayjs(`2023-${monthId + 1}-${dayId + 2}`);
+    const day = dayjs(`2023-${monthId + 1}-${dayId + 1}`);
 
     const target = targetsMap[day.format('DD/MM/YYYY')];
 

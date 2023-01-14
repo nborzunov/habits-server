@@ -1,13 +1,14 @@
 import { Box, Grid, GridItem, Heading } from '@chakra-ui/react';
 import Icons from '~/services/Icons';
 import Statistics from '~/components/Habits/Statistics';
-import { TargetCalendar, TargetCalendarContext } from '~/components/Dashboard/TargetCalendar';
+import { TargetCalendarContext, YearlyCalendar } from '~/components/Dashboard/YearlyCalendar';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import TargetChart from '~/components/Habits/TargetChart';
 import { habitsState, selectedHabitState } from '~/store/atoms';
 import { Habit, TargetType } from '~/types/types';
 import { useMutation } from '@tanstack/react-query';
 import api from '~/services/api';
+import MonthlyCalendar from '~/components/Dashboard/MonthlyCalendar';
 
 const HabitDetails = () => {
     const habit = useRecoilValue(selectedHabitState);
@@ -106,8 +107,24 @@ const HabitDetails = () => {
                                     onCellClick: handleCalendarCellClick,
                                 }}
                             >
-                                <TargetCalendar targets={habit.targets} />
+                                <YearlyCalendar targets={habit.targets} />
                             </TargetCalendarContext.Provider>
+                        </Box>
+                    </GridItem>
+                    <GridItem colStart={1} colSpan={18} display='flex' justifyContent='center'>
+                        <Box
+                            borderRadius='xl'
+                            borderColor='gray.200'
+                            borderWidth='2px'
+                            p='2'
+                            display='flex'
+                            justifyContent='center'
+                        >
+                            <MonthlyCalendar
+                                targets={habit.targets}
+                                habit={habit}
+                                onCellClick={handleCalendarCellClick}
+                            />
                         </Box>
                     </GridItem>
                 </Grid>

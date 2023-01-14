@@ -15,16 +15,17 @@ pub async fn create(
     client: web::Data<Client>,
     form: web::Json<TargetData>,
 ) -> HttpResponse {
-    let res = repository::targets::create(
+    match repository::targets::create(
         client.clone(),
         user.0.id.unwrap(),
         Target::new(&form.clone()),
     )
-    .await;
-
-    match res {
-        Ok(_) => HttpResponse::Ok()
-            .json(repository::habits::get_details(client.clone(), form.habit_id).await),
-        Err(_) => HttpResponse::InternalServerError().body("Server error"),
+    .await
+    {
+        Ok(_) => match repository::habits::get_details(client.clone(), form.habit_id).await {
+            Ok(habit) => HttpResponse::Ok().json(habit),
+            Err(err) => HttpResponse::InternalServerError().body(err),
+        },
+        Err(err) => HttpResponse::InternalServerError().body(err),
     }
 }

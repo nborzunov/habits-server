@@ -1,4 +1,5 @@
 use std::iter::Iterator;
+use std::str::FromStr;
 
 use actix_web::{delete, get, post, put, web, HttpResponse, Scope};
 use mongodb::bson::oid::ObjectId;
@@ -68,22 +69,22 @@ pub async fn create(
 pub async fn edit(
     user: AuthenticationService,
     client: web::Data<Client>,
-    path: web::Path<ObjectId>,
+    path: web::Path<String>,
     form: web::Json<HabitData>,
 ) -> HttpResponse {
+    let habit_id = ObjectId::from_str(&path.clone()).unwrap();
     match repository::habits::edit(
         client.clone(),
         user.0.id.unwrap(),
-        path.clone(),
+        habit_id.clone(),
         form.into_inner(),
     )
     .await
     {
-        Ok(_) => {
-            let habit = repository::habits::get_details(client.clone(), path.clone()).await;
-
-            HttpResponse::Ok().json(habit)
-        }
+        Ok(_) => match repository::habits::get_details(client.clone(), habit_id).await {
+            Ok(habit) => HttpResponse::Ok().json(habit),
+            Err(err) => HttpResponse::InternalServerError().body(err),
+        },
         Err(err) => HttpResponse::InternalServerError().body(err),
     }
 }
@@ -92,9 +93,10 @@ pub async fn edit(
 pub async fn delete(
     user: AuthenticationService,
     client: web::Data<Client>,
-    path: web::Path<ObjectId>,
+    path: web::Path<String>,
 ) -> HttpResponse {
-    let res = repository::habits::delete(client, user.0.id.unwrap(), path.clone()).await;
+    let habit_id = ObjectId::from_str(&path.clone()).unwrap();
+    let res = repository::habits::delete(client, user.0.id.unwrap(), habit_id).await;
 
     match res {
         Ok(_) => HttpResponse::Ok().body("habit deleted"),
@@ -106,9 +108,10 @@ pub async fn delete(
 pub async fn archive(
     user: AuthenticationService,
     client: web::Data<Client>,
-    path: web::Path<ObjectId>,
+    path: web::Path<String>,
 ) -> HttpResponse {
-    let res = repository::habits::archive(client, user.0.id.unwrap(), path.clone()).await;
+    let habit_id = ObjectId::from_str(&path.clone()).unwrap();
+    let res = repository::habits::archive(client, user.0.id.unwrap(), habit_id).await;
     match res {
         Ok(_) => HttpResponse::Ok().body("habit archived"),
         Err(_) => HttpResponse::InternalServerError().body("Server error"),

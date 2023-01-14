@@ -123,7 +123,7 @@ const HabitItem = ({ habit }: { habit: Habit }) => {
     const archiveHabit = useMutation({
         mutationFn: () => {
             return api
-                .put<Habit>(`/habits/${habit.id}/archive`)
+                .put<Habit>(`/habits/${habit.id}/archive/`)
                 .then((res) => res.data)
                 .then(() => {
                     setHabits((prev) => prev.filter((h) => h.id !== habit.id));

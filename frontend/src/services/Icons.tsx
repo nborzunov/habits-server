@@ -1,6 +1,9 @@
 import {
     FiCheck,
     FiChevronLeft,
+    FiChevronRight,
+    FiChevronsLeft,
+    FiChevronsRight,
     FiChevronsUp,
     FiEdit3,
     FiEye,
@@ -33,6 +36,17 @@ const Icons = {
     Show: FiEye,
     Hide: FiEyeOff,
     Back: FiChevronLeft,
+    Left: FiChevronLeft,
+    Right: FiChevronRight,
+    LeftDouble: FiChevronsLeft,
+    RightDouble: FiChevronsRight,
 };
+
+// TODO: write proxy for icons
+// const Icons: {[key: string]: typeof Icon} = new Proxy(IconNames, {
+//     get(target, name) {
+//         return <Icon as={target[name]} />;
+//     },
+// });
 
 export default Icons;
