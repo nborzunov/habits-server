@@ -9,11 +9,13 @@ import {
     FiEdit3,
     FiEye,
     FiEyeOff,
+    FiGrid,
     FiHome,
     FiInbox,
     FiMenu,
     FiPieChart,
     FiPlus,
+    FiSave,
 } from 'react-icons/fi';
 import { HiFire } from 'react-icons/hi';
 import { RxCross2 } from 'react-icons/rx';
@@ -42,6 +44,8 @@ const Icons = {
     Right: FiChevronRight,
     LeftDouble: FiChevronsLeft,
     RightDouble: FiChevronsRight,
+    Grid: FiGrid,
+    Save: FiSave,
 };
 
 // TODO: write proxy for icons

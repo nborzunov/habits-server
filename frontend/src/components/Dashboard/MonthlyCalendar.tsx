@@ -250,8 +250,6 @@ const Cell = ({
                 {target && target.targetType === TargetType.Skip ? (
                     <Box
                         p={2}
-                        width={sizePx + 20}
-                        height={sizePx + 20}
                         borderRadius='50%'
                         color={'black'}
                         bg={'green.100'}
