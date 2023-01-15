@@ -18,7 +18,7 @@ export const YearlyCalendar = ({ size, targets }: { size?: 'sm' | 'md'; targets:
     }, {} as { [key: string]: Target });
     size = size || 'md';
     return (
-        <Box>
+        <Box height={'100%'}>
             <Flex p='2'>
                 {getLoop(12).map((i) => (
                     <Month

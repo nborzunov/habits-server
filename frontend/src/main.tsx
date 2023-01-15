@@ -1,15 +1,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-
 import App from './App';
 import { ChakraProvider, extendTheme } from '@chakra-ui/react';
-
-// styles
-import './index.css';
 import { RecoilRoot } from 'recoil';
-import { QueryClient } from '@tanstack/react-query';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import './index.css';
+
 const theme = extendTheme({
     colors: {
         blue: {

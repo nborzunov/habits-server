@@ -11,8 +11,8 @@ const TargetChart = ({ completed, failed }: { completed: number; failed: number 
         datasets: [
             {
                 data: [completed, failed],
-                backgroundColor: [theme.colors.green[400], theme.colors.red[400]],
-                hoverBackgroundColor: [theme.colors.green[500], theme.colors.red[500]],
+                backgroundColor: [theme.colors.green[500], theme.colors.red[500]],
+                hoverBackgroundColor: [theme.colors.green[600], theme.colors.red[600]],
             },
         ],
     };

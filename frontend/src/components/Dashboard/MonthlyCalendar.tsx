@@ -35,7 +35,7 @@ const MonthlyCalendar = ({
     }, {} as { [key: string]: Target });
     size = size || 'md';
     const daysOfTheWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const [monthId, setMonthId] = useState(2);
+    const [monthId, setMonthId] = useState(dayjs().month());
     const [year, setYear] = useState(dayjs().year());
 
     const daysInMonth = dayjs(`${year}-${monthId + 1}-1`).daysInMonth();
@@ -109,36 +109,34 @@ const MonthlyCalendar = ({
             </Flex>
             <Grid templateColumns={`repeat(7, ${cellSize + 30}px)`} gap={`${gap}px`}>
                 {getLoop(7).map((rowId) => (
-                    <>
-                        <GridItem key={monthId + rowId}>
+                    <GridItem key={'grid-column' + monthId + rowId}>
+                        <Box>
                             <Box>
-                                <Box>
-                                    <Text py='2' textAlign='center' fontWeight='bold'>
-                                        {daysOfTheWeek[rowId]}
-                                    </Text>
-                                </Box>
-
-                                <Grid templateRows={`repeat(${columns}, 1fr)`} gap={`${gap}px`}>
-                                    {getLoop(columns).map((columnId) => (
-                                        <Cell
-                                            year={year}
-                                            key={monthId + columnId + rowId}
-                                            columnId={columnId}
-                                            rowId={rowId}
-                                            rawMonthId={monthId}
-                                            rawDayId={columnId * 7 + rowId - firstDay}
-                                            daysInMonth={daysInMonth}
-                                            size={cellSize}
-                                            targetsMap={targetsMap}
-                                            habit={habit}
-                                            onCellClick={onCellClick}
-                                            setMonthId={setMonthId}
-                                        />
-                                    ))}
-                                </Grid>
+                                <Text py='2' textAlign='center' fontWeight='bold'>
+                                    {daysOfTheWeek[rowId]}
+                                </Text>
                             </Box>
-                        </GridItem>
-                    </>
+
+                            <Grid templateRows={`repeat(${columns}, 1fr)`} gap={`${gap}px`}>
+                                {getLoop(columns).map((columnId) => (
+                                    <Cell
+                                        year={year}
+                                        key={'cell' + monthId + columnId + rowId}
+                                        columnId={columnId}
+                                        rowId={rowId}
+                                        rawMonthId={monthId}
+                                        rawDayId={columnId * 7 + rowId - firstDay}
+                                        daysInMonth={daysInMonth}
+                                        size={cellSize}
+                                        targetsMap={targetsMap}
+                                        habit={habit}
+                                        onCellClick={onCellClick}
+                                        setMonthId={setMonthId}
+                                    />
+                                ))}
+                            </Grid>
+                        </Box>
+                    </GridItem>
                 ))}
             </Grid>
         </Box>
@@ -242,7 +240,7 @@ const Cell = ({
 
     const target = targetsMap[day.format('DD/MM/YYYY')];
     return (
-        <Box key={monthId + dayId} cursor='pointer'>
+        <Box cursor='pointer'>
             <Tooltip
                 label={
                     dayjs(`2023-${monthId + 1}-${dayId + 1}`).format('D MMMM YYYY') +

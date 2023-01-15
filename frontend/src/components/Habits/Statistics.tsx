@@ -42,16 +42,28 @@ const Statistics = ({
                                 {title}
                             </Text>
                         </Flex>
-                        <Text fontSize='md' fontWeight='bold'>
+                        <Text fontSize='md' fontWeight='bold' pl={'1'} pb={'1'}>
                             {formatDays(value)}
                         </Text>
                         {footerValue ? (
-                            <Flex alignItems='center' color='green.500' mb='2'>
-                                <Icon as={Icons.ArrowTop} />
-                                <Text color='inherit' fontSize='12px' fontWeight='semibold'>
-                                    {formatDays(footerValue)}
-                                </Text>
-                            </Flex>
+                            <>
+                                {type === 'increase' && (
+                                    <Flex alignItems='center' color='green.500' mb='2'>
+                                        <Icon as={Icons.ArrowTop} />
+                                        <Text color='inherit' fontSize='12px' fontWeight='semibold'>
+                                            {formatDays(footerValue)}
+                                        </Text>
+                                    </Flex>
+                                )}
+                                {type === 'decrease' && (
+                                    <Flex alignItems='center' color='red.500' mb='2'>
+                                        <Icon as={Icons.ArrowBottom} />
+                                        <Text color='inherit' fontSize='12px' fontWeight='semibold'>
+                                            {formatDays(footerValue)}
+                                        </Text>
+                                    </Flex>
+                                )}
+                            </>
                         ) : (
                             <Text color='gray.500'>---</Text>
                         )}

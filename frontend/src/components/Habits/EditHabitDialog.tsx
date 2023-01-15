@@ -62,6 +62,10 @@ const EditHabitDialog = ({
         setAllowSkip(false);
     };
 
+    const handleChangeTitle = (value: string) => {
+        setTitle(value.charAt(0).toUpperCase() + value.slice(1));
+    };
+
     return (
         <Modal isOpen={isOpen} onClose={onClose}>
             <ModalOverlay />
@@ -77,7 +81,7 @@ const EditHabitDialog = ({
                             <Input
                                 type='text'
                                 value={title}
-                                onChange={(e) => setTitle(e.target.value)}
+                                onChange={(e) => handleChangeTitle(e.target.value)}
                             />
                         </FormControl>
 

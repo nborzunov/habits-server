@@ -1,5 +1,6 @@
 import { atom, selector } from 'recoil';
 import { Habit, User } from '~/types/types';
+import { Layout } from 'react-grid-layout';
 
 export const habitsState = atom<Habit[]>({
     key: 'habitsState',
@@ -56,3 +57,16 @@ export const tokenState = atom<String | null>({
     default: null,
     effects: [localStorageEffect('authToken')],
 });
+
+// export const widgetsState = atom<String | null>({
+//     key: 'tokenState',
+//     default: [],
+//     effects: [localStorageEffect('widgets')],
+// });
+
+export const layoutState = atom<Layout[] | undefined>({
+    key: 'layoutState',
+    default: undefined,
+    // effects: [localStorageEffect('layout')],
+});
+

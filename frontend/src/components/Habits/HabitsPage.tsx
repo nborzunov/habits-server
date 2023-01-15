@@ -10,7 +10,7 @@ const HabitsPage = () => {
                 <GridItem>
                     <HabitsList />
                 </GridItem>
-                <GridItem p={2}>
+                <GridItem>
                     <HabitDetails />
                 </GridItem>
             </Grid>

@@ -1,18 +1,97 @@
-import { Box, Grid, GridItem, Heading } from '@chakra-ui/react';
+import { Box, Heading } from '@chakra-ui/react';
 import Icons from '~/services/Icons';
 import Statistics from '~/components/Habits/Statistics';
 import { TargetCalendarContext, YearlyCalendar } from '~/components/Dashboard/YearlyCalendar';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import TargetChart from '~/components/Habits/TargetChart';
-import { habitsState, selectedHabitState } from '~/store/atoms';
+import { habitsState, layoutState, selectedHabitState } from '~/store/atoms';
 import { Habit, TargetType } from '~/types/types';
 import { useMutation } from '@tanstack/react-query';
 import api from '~/services/api';
 import MonthlyCalendar from '~/components/Dashboard/MonthlyCalendar';
+import GridLayout, { Layout } from 'react-grid-layout';
+import { useCallback, useEffect } from 'react';
+
+export enum WidgetIdentifiers {
+    CURRENT_STREAK = 'CURRENT_STREAK',
+    COMPLETED_CHART = 'COMPLETED_CHART',
+    COMPLETED_TARGETS = 'COMPLETED_TARGETS',
+    FAILED_TARGETS = 'FAILED_TARGETS',
+    YEARLY_CALENDAR = 'YEARLY_CALENDAR',
+    MONTHLY_CALENDAR = 'MONTHLY_CALENDAR',
+}
+
+type LayoutPropsOnly = Omit<Layout, 'i'>;
+export type LayoutSizes = 'sm' | 'lg';
+const layoutWidth = 3;
+const layoutHeight = 94;
+
+const WIDGET_LAYOUTS: Record<WidgetIdentifiers, Partial<Record<LayoutSizes, LayoutPropsOnly>>> = {
+    CURRENT_STREAK: {
+        lg: { x: 0, y: 0, w: 2, h: 1 },
+    },
+    COMPLETED_TARGETS: {
+        lg: { x: 0, y: 0.9, w: 1, h: 1 },
+    },
+    FAILED_TARGETS: {
+        lg: {
+            x: 1,
+            y: 1,
+            w: 1,
+            h: 1,
+        },
+    },
+
+    YEARLY_CALENDAR: {
+        lg: { x: 0, y: 2, w: 2, h: 2 },
+    },
+    MONTHLY_CALENDAR: {
+        lg: {
+            x: 2,
+            y: 4,
+            w: 1,
+            h: 4,
+        },
+    },
+    COMPLETED_CHART: {
+        lg: {
+            x: 2,
+            y: 0,
+            w: 1,
+            h: 4,
+        },
+    },
+};
 
 const HabitDetails = () => {
     const habit = useRecoilValue(selectedHabitState);
     const setHabits = useSetRecoilState(habitsState);
+    //
+    const [layout, setLayout] = useRecoilState(layoutState);
+    // const [widgets, setWidgets] = useLocalStorage<CustomWidget[]>(
+    //     StorageKeys.WIDGETS,
+    //     DEFAULT_WIDGET_STATE,
+    // );
+
+    useEffect(() => {
+        if (layout) return;
+        boostrapLayout();
+    }, []);
+
+    const boostrapLayout = useCallback(() => {
+        const initial = Object.entries(WIDGET_LAYOUTS).map(([key, values]) => ({
+            i: key,
+            ...values[Object.keys(values).shift() as LayoutSizes],
+        }));
+        setLayout(initial as Layout[]);
+    }, []);
+
+    const onLayoutChange = useCallback(
+        (newLayout: Layout[]) => {
+            setLayout(newLayout.map((item) => Object.assign({}, item)));
+        },
+        [layout],
+    );
 
     const createTarget = useMutation({
         mutationFn: (data: {
@@ -42,39 +121,47 @@ const HabitDetails = () => {
     };
 
     return (
-        <Box>
-            <Heading as='h3' px={2} size='md' mb={4}>
-                {habit.title} header
+        <Box m={0} width={'1600px'}>
+            <Heading as='h3' px={2} size='md' p={2}>
+                {habit.title}
             </Heading>
             <Box>
-                <Grid gap={3} templateColumns='repeat(32, 1fr)'>
-                    <GridItem colSpan={18}>
+                <GridLayout
+                    className='layout'
+                    layout={layout}
+                    cols={layoutWidth}
+                    margin={[16, 16]}
+                    rowHeight={layoutHeight}
+                    width={1600}
+                    isDraggable={true}
+                    isResizable={false}
+                    onLayoutChange={onLayoutChange}
+                >
+                    <Box key={WidgetIdentifiers.CURRENT_STREAK}>
                         <Statistics
                             title='Current streak'
                             value={habit.currentStreak}
                             type='streak'
                             startDate={habit.currentStreakStartDate}
                         />
-                    </GridItem>
-                    {habit.completedTargets || habit.failedTargets ? (
-                        <GridItem gridArea='1 / 19 / 5 / 26'>
-                            <Box
-                                borderRadius='xl'
-                                borderColor='gray.200'
-                                borderWidth='2px'
-                                p='4'
-                                height='390px'
-                                display='flex'
-                                justifyContent='center'
-                            >
-                                <TargetChart
-                                    completed={habit.completedTargets}
-                                    failed={habit.failedTargets}
-                                />
-                            </Box>
-                        </GridItem>
-                    ) : null}
-                    <GridItem rowSpan={2} colStart={1} colSpan={9}>
+                    </Box>
+
+                    <Box
+                        key={WidgetIdentifiers.COMPLETED_CHART}
+                        borderRadius='xl'
+                        borderColor='gray.200'
+                        borderWidth='2px'
+                        p='4'
+                        display='flex'
+                        justifyContent='center'
+                    >
+                        <TargetChart
+                            completed={habit.completedTargets}
+                            failed={habit.failedTargets}
+                        />
+                    </Box>
+
+                    <Box key={WidgetIdentifiers.COMPLETED_TARGETS}>
                         <Statistics
                             icon={Icons.Complete}
                             title='Complete'
@@ -82,52 +169,50 @@ const HabitDetails = () => {
                             type='increase'
                             footerValue={habit.completedTargets}
                         />
-                    </GridItem>
-                    <GridItem rowSpan={2} colSpan={9}>
+                    </Box>
+                    <Box key={WidgetIdentifiers.FAILED_TARGETS}>
                         <Statistics
                             icon={Icons.Cross}
                             title='Failed'
                             value={habit.failedTargets}
-                            type='increase'
+                            type='decrease'
                             footerValue={habit.failedTargets}
                         />
-                    </GridItem>
-                    <GridItem colStart={1} colSpan={18} display='flex' justifyContent='center'>
-                        <Box
-                            borderRadius='xl'
-                            borderColor='gray.200'
-                            borderWidth='2px'
-                            p='2'
-                            display='flex'
-                            justifyContent='center'
+                    </Box>
+                    <Box
+                        key={WidgetIdentifiers.YEARLY_CALENDAR}
+                        borderRadius='xl'
+                        borderColor='gray.200'
+                        borderWidth='2px'
+                        p='2'
+                        display='flex'
+                        justifyContent='center'
+                    >
+                        <TargetCalendarContext.Provider
+                            value={{
+                                habit,
+                                onCellClick: handleCalendarCellClick,
+                            }}
                         >
-                            <TargetCalendarContext.Provider
-                                value={{
-                                    habit,
-                                    onCellClick: handleCalendarCellClick,
-                                }}
-                            >
-                                <YearlyCalendar targets={habit.targets} />
-                            </TargetCalendarContext.Provider>
-                        </Box>
-                    </GridItem>
-                    <GridItem colStart={1} colSpan={18} display='flex' justifyContent='center'>
-                        <Box
-                            borderRadius='xl'
-                            borderColor='gray.200'
-                            borderWidth='2px'
-                            p='2'
-                            display='flex'
-                            justifyContent='center'
-                        >
-                            <MonthlyCalendar
-                                targets={habit.targets}
-                                habit={habit}
-                                onCellClick={handleCalendarCellClick}
-                            />
-                        </Box>
-                    </GridItem>
-                </Grid>
+                            <YearlyCalendar targets={habit.targets} />
+                        </TargetCalendarContext.Provider>
+                    </Box>
+                    <Box
+                        key={WidgetIdentifiers.MONTHLY_CALENDAR}
+                        borderRadius='xl'
+                        borderColor='gray.200'
+                        borderWidth='2px'
+                        p='2'
+                        display='flex'
+                        justifyContent='center'
+                    >
+                        <MonthlyCalendar
+                            targets={habit.targets}
+                            habit={habit}
+                            onCellClick={handleCalendarCellClick}
+                        />
+                    </Box>
+                </GridLayout>
             </Box>
         </Box>
     );
