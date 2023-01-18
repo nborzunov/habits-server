@@ -1,10 +1,6 @@
-use std::collections::HashMap;
-
-use chrono::{DateTime, Duration, NaiveDate, Utc};
+use chrono::{DateTime, Utc};
 use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
-
-use crate::models::habits::Habit;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -28,57 +24,39 @@ impl Target {
         }
     }
 
-    pub fn get_streak(
-        habit: &Habit,
-        mut targets: Vec<TargetDetails>,
-        first: Option<TargetDetails>,
+    pub fn get_streak_and_failures(
+        targets: Vec<TargetDetails>,
+        allow_skip: bool,
     ) -> (Vec<TargetDetails>, i32) {
-        let mut streak = vec![];
-        let mut failed = 0;
+        let mut targets = targets.clone();
         targets.reverse();
 
-        if targets.len() == 0 {
-            return (streak, failed);
-        }
-        let mut last = targets[0].clone().date.date_naive();
-        let first = first.unwrap().date.date_naive();
-        let mut skips: Vec<&TargetDetails> = vec![];
-        let mut started = false;
-        let mut targets_map: HashMap<NaiveDate, TargetDetails> = HashMap::new();
-        for target in targets.iter() {
-            targets_map.insert(target.date.clone().date_naive(), target.clone());
-        }
+        let last_done = targets
+            .iter()
+            .position(|target| matches!(target.target_type, TargetType::Done))
+            .unwrap();
 
-        // TODO: handle if there are series start with skip
-        while last != first {
-            match targets_map.get(&last) {
-                Some(target) => {
-                    if target.date.date_naive() == last {
-                        if habit.allow_skip
-                            && matches!(target.clone().target_type, TargetType::Skip)
-                        {
-                            skips.push(target);
-                        } else if matches!(target.clone().target_type, TargetType::Done) {
-                            started = true;
-                            for &skip in skips.iter() {
-                                streak.push(skip.clone());
-                            }
-                            skips.clear();
-                            streak.push(target.clone());
-                        }
-                    }
-                }
-                None => {
-                    if started {
-                        failed += 1;
-                    }
-                }
+        let mut streak_targets = Vec::new();
+        streak_targets.push(targets[last_done].clone());
+        targets.drain(last_done..last_done + 1);
+        let mut prev_date = streak_targets[0].date.date_naive();
+        let mut failed_days: i64 = 0;
+
+        for target in targets {
+            let date = target.date.date_naive();
+
+            if (prev_date - date).num_days() == 1
+                && (matches!(target.clone().target_type, TargetType::Done)
+                    || allow_skip && matches!(target.clone().target_type, TargetType::Skip))
+            {
+                streak_targets.push(target);
+            } else {
+                failed_days += (prev_date - date).num_days() - 1;
             }
-            last -= Duration::days(1);
+            prev_date = date
         }
 
-        streak.reverse();
-        return (streak, failed);
+        (streak_targets, failed_days as i32)
     }
 
     pub fn get_completed(targets: &Vec<TargetDetails>) -> i32 {
@@ -99,6 +77,16 @@ impl Target {
             }
         }
         total
+    }
+
+    pub fn get_skipped(targets: &Vec<TargetDetails>) -> i32 {
+        let mut skipped = 0;
+        for target in targets {
+            if matches!(target.target_type, TargetType::Skip) {
+                skipped += 1;
+            }
+        }
+        skipped
     }
 }
 

@@ -56,6 +56,7 @@ pub struct HabitDetails {
     completed_targets: i32,
     failed_targets: i32,
     total_targets: i32,
+    skipped_targets: i32,
     archived: bool,
 
     pub targets: Vec<TargetDetails>,
@@ -64,17 +65,9 @@ pub struct HabitDetails {
 impl HabitDetails {
     pub fn parse(h: &Habit, mut targets: Vec<TargetDetails>) -> HabitDetails {
         targets.sort_by_key(|t| t.date.clone());
-        let first: Option<TargetDetails> = match targets.first() {
-            Some(t) => Some(t.clone()),
-            None => None,
-        };
+
         let (current_streak_targets, failed_targets) =
-            Target::get_streak(h, targets.clone(), first.clone());
-        let completed_today = current_streak_targets
-            .iter()
-            .any(|target| target.date.date_naive() == Utc::now().date_naive());
-        let completed_targets = Target::get_completed(&targets);
-        let total_targets = Target::get_total(&targets);
+            Target::get_streak_and_failures(targets.clone(), h.allow_skip);
 
         HabitDetails {
             id: h.id.clone().unwrap().to_string(),
@@ -89,7 +82,9 @@ impl HabitDetails {
             allow_skip: h.allow_skip,
             targets: targets.clone(),
             archived: h.archived,
-            completed_today,
+            completed_today: current_streak_targets
+                .iter()
+                .any(|target| target.date.date_naive() == Utc::now().date_naive()),
             current_streak: current_streak_targets.len() as i32,
             current_streak_start_date: match current_streak_targets
                 .iter()
@@ -98,9 +93,10 @@ impl HabitDetails {
                 Some(t) => Some(t.date.clone()),
                 None => None,
             },
-            completed_targets,
+            completed_targets: Target::get_completed(&targets),
             failed_targets,
-            total_targets,
+            total_targets: Target::get_total(&targets),
+            skipped_targets: Target::get_skipped(&targets),
         }
     }
 
