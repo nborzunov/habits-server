@@ -28,13 +28,20 @@ impl Target {
         targets: Vec<TargetDetails>,
         allow_skip: bool,
     ) -> (Vec<TargetDetails>, i32) {
+        if targets.len() == 0 {
+            return (targets, 0);
+        }
         let mut targets = targets.clone();
         targets.reverse();
 
         let last_done = targets
             .iter()
-            .position(|target| matches!(target.target_type, TargetType::Done))
-            .unwrap();
+            .position(|target| matches!(target.target_type, TargetType::Done));
+
+        if last_done.is_none() {
+            return (targets, 0);
+        }
+        let last_done = last_done.unwrap();
 
         let mut streak_targets = Vec::new();
         streak_targets.push(targets[last_done].clone());

@@ -1,17 +1,18 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import Dashboard from '~/components/Dashboard/Dashboard';
-import HabitsPage from '~/components/Habits/HabitsPage';
-import Layout from '~/components/Layout/Layout';
-import Auth from '~/components/Auth/Auth';
-import Signup from '~/components/Auth/Signup';
-import Login from '~/components/Auth/Login';
-import AuthStartup from '~/components/Auth/AuthStartup';
+import Dashboard from '~/Dashboard/components/Dashboard';
+import HabitsPage from '~/Habits/components/HabitsPage';
+import Layout from '~/Layout/components/Layout';
+import Auth from '~/Auth/components/Auth';
+import Signup from '~/Auth/components/Signup';
+import Login from '~/Auth/components/Login';
+import AuthStartup from '~/Auth/components/AuthStartup';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { User } from '~/types/types';
-import api from '~/services/api';
+import api from '~/common/services/api';
 import { useRecoilState, useSetRecoilState } from 'recoil';
-import { activeUserState, tokenState } from '~/store/atoms';
+import { activeUserState, tokenState } from '~/common/store/atoms';
+import ProfilePage from '~/Profile/components/ProfilePage';
+import { User } from '~/Auth/types';
 
 function App() {
     const [isAuth, setIsAuth] = useState(true);
@@ -62,6 +63,7 @@ function App() {
                     <Route path='/' element={<Layout />}>
                         <Route index path='habits' element={<HabitsPage />} />
                         <Route path='dashboard' element={<Dashboard />} />
+                        <Route path='me' element={<ProfilePage />} />
                         <Route path='*' element={<Navigate to='/habits' replace />} />
                     </Route>
                 )}
