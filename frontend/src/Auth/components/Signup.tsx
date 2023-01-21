@@ -11,6 +11,7 @@ import {
     Link,
     Stack,
     Text,
+    useToast,
 } from '@chakra-ui/react';
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
@@ -35,6 +36,7 @@ const Signup = ({ refetch }: { refetch: () => void }) => {
     });
     const [showPassword, setShowPassword] = useState(false);
 
+    const toast = useToast();
     const signup = useMutation({
         mutationFn: (data: ProfileData) => {
             return api
@@ -43,7 +45,25 @@ const Signup = ({ refetch }: { refetch: () => void }) => {
                 }>('/users/signup', data)
                 .then((res) => res.data)
                 .then((data) => setToken(`Bearer ${data.token}`))
-                .then(() => refetch());
+                .then(() => refetch())
+                .then(() =>
+                    toast({
+                        title: 'Success',
+                        description: 'Successfully created account!',
+                        status: 'success',
+                        duration: 1000,
+                        isClosable: true,
+                    }),
+                )
+                .catch((err) =>
+                    toast({
+                        title: 'Error',
+                        description: err.message,
+                        status: 'error',
+                        duration: 3000,
+                        isClosable: true,
+                    }),
+                );
         },
     });
     const handleSubmit = () => {

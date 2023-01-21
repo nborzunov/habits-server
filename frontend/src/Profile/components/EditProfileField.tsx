@@ -12,11 +12,11 @@ import {
 } from '@chakra-ui/react';
 import Icons from '~/common/services/Icons';
 import React from 'react';
-import { ProfileDataFields } from '~/Profile/types';
+import { EditProfileFields } from '~/Profile/types';
 import ErrorWrapper from '~/common/components/ErrorWrapper';
 
 interface EditProfileFieldProps {
-    field: ProfileDataFields;
+    field: EditProfileFields;
     label: string;
     initialValue: string;
     value: string;

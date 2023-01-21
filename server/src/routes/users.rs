@@ -1,15 +1,19 @@
 use std::str::FromStr;
 
-use actix_web::{get, post, web, HttpRequest, HttpResponse, Scope};
+use actix_web::{get, post, put, web, HttpRequest, HttpResponse, Scope};
 use mongodb::Client;
 
-use crate::models::user::{UserData, UserDetails};
+use crate::middlewares::auth::AuthenticationService;
+use crate::models::user::{UpdateUserData, UserData, UserDetails};
 use crate::repository;
 use crate::services::crypto::Auth;
 use crate::services::hashing::hashing;
 
 pub fn routes() -> Scope {
-    web::scope("/users").service(create).service(get_user)
+    web::scope("/users")
+        .service(create)
+        .service(get)
+        .service(update)
 }
 
 #[post("/signup")]
@@ -27,7 +31,7 @@ pub async fn create(client: web::Data<Client>, form: web::Json<UserData>) -> Htt
 }
 
 #[get("/me")]
-pub async fn get_user(client: web::Data<Client>, req: HttpRequest) -> HttpResponse {
+pub async fn get(client: web::Data<Client>, req: HttpRequest) -> HttpResponse {
     let token = req
         .headers()
         .get("Authorization")
@@ -48,5 +52,21 @@ pub async fn get_user(client: web::Data<Client>, req: HttpRequest) -> HttpRespon
             HttpResponse::Ok().json(UserDetails::parse(&user))
         }
         Err(_) => HttpResponse::Unauthorized().finish(),
+    }
+}
+
+#[put("/me")]
+pub async fn update(
+    user: AuthenticationService,
+    client: web::Data<Client>,
+    form: web::Json<UpdateUserData>,
+) -> HttpResponse {
+    let user_id = user.0.id.unwrap();
+    match repository::users::update(client.clone(), user.0.id.unwrap(), form.into_inner()).await {
+        Ok(_) => match repository::users::get_by_id(client.clone(), user_id).await {
+            Ok(u) => HttpResponse::Ok().json(UserDetails::parse(&u)),
+            Err(err) => HttpResponse::InternalServerError().body(err),
+        },
+        Err(err) => HttpResponse::InternalServerError().body(err),
     }
 }

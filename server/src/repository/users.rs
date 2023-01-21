@@ -1,9 +1,9 @@
 use actix_web::web;
 use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
-use mongodb::Client;
+use mongodb::{bson, Client};
 
-use crate::models::user::{User, UserData};
+use crate::models::user::{UpdateUserData, User, UserData};
 use crate::services::hashing::hashing;
 use crate::DB_NAME;
 
@@ -77,4 +77,22 @@ pub async fn get_by_username(client: web::Data<Client>, username: String) -> Res
         Some(user) => Ok(user),
         None => Err("User not found".to_string()),
     }
+}
+
+pub async fn update(
+    client: web::Data<Client>,
+    id: ObjectId,
+    user: UpdateUserData,
+) -> Result<(), String> {
+    client
+        .database(DB_NAME)
+        .collection::<User>(COLL_NAME)
+        .update_one(
+            doc! {"_id": id },
+            doc! {"$set": bson::to_bson(&user).unwrap() },
+            None,
+        )
+        .await
+        .map(|_| ())
+        .map_err(|_| "Failed to update user".to_string())
 }

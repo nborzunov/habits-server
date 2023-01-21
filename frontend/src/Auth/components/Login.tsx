@@ -9,6 +9,7 @@ import {
     Link,
     Stack,
     Text,
+    useToast,
 } from '@chakra-ui/react';
 import React from 'react';
 import Back from '~/Layout/components/Back';
@@ -26,6 +27,7 @@ const Login = ({ refetch }: { refetch: () => void }) => {
     const [username, setUsername] = React.useState('');
     const [password, setPassword] = React.useState('');
 
+    const toast = useToast();
     const login = useMutation({
         mutationFn: (data: { username: string; password: string }) => {
             return api
@@ -34,7 +36,25 @@ const Login = ({ refetch }: { refetch: () => void }) => {
                 }>('/auth/', data)
                 .then((res) => res.data)
                 .then((data) => setToken(`Bearer ${data.token}`))
-                .then(() => refetch());
+                .then(() => refetch())
+                .then(() =>
+                    toast({
+                        title: 'Success',
+                        description: 'Successfully login!',
+                        status: 'success',
+                        duration: 1000,
+                        isClosable: true,
+                    }),
+                )
+                .catch((err) =>
+                    toast({
+                        title: 'Error',
+                        description: err.message,
+                        status: 'error',
+                        duration: 3000,
+                        isClosable: true,
+                    }),
+                );
         },
     });
     const handleSubmit = () => {

@@ -20,9 +20,9 @@ export interface ProfileData {
     password: string;
 }
 
-export type ProfileDataFields = 'name' | 'surname' | 'username' | 'email' | 'bio';
+export type EditProfileFields = 'name' | 'surname' | 'username' | 'bio';
 
-export type FieldsConfig<T = ProfileDataFields> = Array<{
+export type FieldsConfig<T = EditProfileFields> = Array<{
     field: T;
     label: string;
     validationProps: any;

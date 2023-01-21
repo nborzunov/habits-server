@@ -87,3 +87,13 @@ pub struct UserData {
     #[validate(length(min = 3))]
     pub password: String,
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct UpdateUserData {
+    pub name: Option<String>,
+    pub surname: Option<String>,
+    pub username: Option<String>,
+    pub email: Option<String>,
+    pub bio: Option<String>,
+    pub image: Option<String>,
+}
