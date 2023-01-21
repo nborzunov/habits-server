@@ -11,7 +11,8 @@ pub struct User {
     pub username: Option<String>,
     pub email: String,
     pub password_hash: String,
-    pub full_name: Option<String>,
+    pub name: String,
+    pub surname: String,
     pub bio: Option<String>,
     pub image: Option<String>,
     pub email_verified: bool,
@@ -27,7 +28,8 @@ impl User {
             username: Some(new_user.username),
             email: new_user.email,
             password_hash,
-            full_name: None,
+            name: new_user.name,
+            surname: new_user.surname,
             bio: None,
             image: None,
             email_verified: false,
@@ -44,7 +46,8 @@ pub struct UserDetails {
     pub id: String,
     pub username: Option<String>,
     pub email: String,
-    pub full_name: Option<String>,
+    pub name: String,
+    pub surname: String,
     pub bio: Option<String>,
     pub image: Option<String>,
     pub email_verified: bool,
@@ -59,7 +62,8 @@ impl UserDetails {
             id: u.id.clone().unwrap().to_string(),
             username: u.username.clone(),
             email: u.email.clone(),
-            full_name: u.full_name.clone(),
+            name: u.name.clone(),
+            surname: u.surname.clone(),
             bio: u.bio.clone(),
             image: u.image.clone(),
             email_verified: u.email_verified,
@@ -72,6 +76,10 @@ impl UserDetails {
 
 #[derive(Debug, Deserialize, Validate, Clone)]
 pub struct UserData {
+    #[validate(length(min = 3))]
+    pub name: String,
+    #[validate(length(min = 3))]
+    pub surname: String,
     #[validate(length(min = 3))]
     pub username: String,
     #[validate(email)]

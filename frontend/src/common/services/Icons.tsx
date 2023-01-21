@@ -16,6 +16,7 @@ import {
     FiMenu,
     FiPieChart,
     FiPlus,
+    FiRotateCcw,
     FiSave,
 } from 'react-icons/fi';
 import { HiFire } from 'react-icons/hi';
@@ -48,6 +49,7 @@ const Icons = {
     RightDouble: FiChevronsRight,
     Grid: FiGrid,
     Save: FiSave,
+    Reset: FiRotateCcw,
 };
 
 // TODO: write proxy for icons

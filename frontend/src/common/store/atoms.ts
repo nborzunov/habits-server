@@ -2,7 +2,7 @@ import { atom, selector } from 'recoil';
 
 import { Layout } from 'react-grid-layout';
 import { Habit } from '~/Habits/types';
-import { User } from '~/Auth/types';
+import { User } from '~/Profile/types';
 
 export const habitsState = atom<Habit[]>({
     key: 'habitsState',

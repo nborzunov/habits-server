@@ -9,16 +9,16 @@ import AuthStartup from '~/Auth/components/AuthStartup';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '~/common/services/api';
-import { useRecoilState, useSetRecoilState } from 'recoil';
+import { useRecoilState } from 'recoil';
 import { activeUserState, tokenState } from '~/common/store/atoms';
 import ProfilePage from '~/Profile/components/ProfilePage';
-import { User } from '~/Auth/types';
+import { User } from '~/Profile/types';
 
 function App() {
     const [isAuth, setIsAuth] = useState(true);
 
     const [token, setToken] = useRecoilState(tokenState);
-    const setActiveUser = useSetRecoilState(activeUserState);
+    const [activeUser, setActiveUser] = useRecoilState(activeUserState);
 
     const { refetch } = useQuery<User | null>({
         queryKey: ['active_user'],
@@ -52,7 +52,7 @@ function App() {
     return (
         <BrowserRouter>
             <Routes>
-                {!isAuth ? (
+                {!isAuth || !activeUser ? (
                     <Route path='/' element={<Auth />}>
                         <Route path='/' element={<AuthStartup />} />
                         <Route path='signup' element={<Signup refetch={handleRefetchUser} />} />
@@ -63,7 +63,7 @@ function App() {
                     <Route path='/' element={<Layout />}>
                         <Route index path='habits' element={<HabitsPage />} />
                         <Route path='dashboard' element={<Dashboard />} />
-                        <Route path='me' element={<ProfilePage />} />
+                        <Route path='me/*' element={<ProfilePage user={activeUser} />} />
                         <Route path='*' element={<Navigate to='/habits' replace />} />
                     </Route>
                 )}

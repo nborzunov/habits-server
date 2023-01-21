@@ -17,6 +17,7 @@ import api from '~/common/services/api';
 import { useSetRecoilState } from 'recoil';
 import { tokenState } from '~/common/store/atoms';
 import useTitle from '~/common/hooks/useTitle';
+import { NavLink } from 'react-router-dom';
 
 const Login = ({ refetch }: { refetch: () => void }) => {
     useTitle('Login');
@@ -83,7 +84,9 @@ const Login = ({ refetch }: { refetch: () => void }) => {
                         <Link color={'blue.400'}>Forgot password?</Link>
                     </Stack>
                     <HStack spacing={3}>
-                        <Back />
+                        <NavLink to={'/'}>
+                            <Back />
+                        </NavLink>
 
                         <Button
                             loadingText='Submitting'

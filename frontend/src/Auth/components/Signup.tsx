@@ -13,25 +13,30 @@ import {
     Text,
 } from '@chakra-ui/react';
 import React, { useState } from 'react';
-import Icons from '~/common/services/Icons';
 import { NavLink } from 'react-router-dom';
-import Back from '~/Layout/components/Back';
 import { useMutation } from '@tanstack/react-query';
 import api from '~/common/services/api';
 import { useSetRecoilState } from 'recoil';
 import { tokenState } from '~/common/store/atoms';
 import useTitle from '~/common/hooks/useTitle';
+import { ProfileData } from '~/Profile/types';
+import Back from '~/Layout/components/Back';
+import Icons from '~/common/services/Icons';
 
 const Signup = ({ refetch }: { refetch: () => void }) => {
     useTitle('Sign Up');
     const setToken = useSetRecoilState(tokenState);
+    const [form, setForm] = useState({
+        name: '',
+        surname: '',
+        username: '',
+        email: '',
+        password: '',
+    });
     const [showPassword, setShowPassword] = useState(false);
-    const [username, setUsername] = React.useState('');
-    const [email, setEmail] = React.useState('');
-    const [password, setPassword] = React.useState('');
 
     const signup = useMutation({
-        mutationFn: (data: { username: string; email: string; password: string }) => {
+        mutationFn: (data: ProfileData) => {
             return api
                 .post<{
                     token: string;
@@ -43,11 +48,7 @@ const Signup = ({ refetch }: { refetch: () => void }) => {
     });
     const handleSubmit = () => {
         // TODO: add form validation
-        signup.mutate({
-            username,
-            email,
-            password,
-        });
+        signup.mutate(form);
     };
 
     return (
@@ -60,16 +61,38 @@ const Signup = ({ refetch }: { refetch: () => void }) => {
                     to enjoy all of our cool features ✌️
                 </Text>
             </Stack>
+
             <Stack spacing={4}>
+                <HStack spacing={4}>
+                    <FormControl id='name' isRequired>
+                        <FormLabel>Name</FormLabel>
+                        <Input
+                            type='text'
+                            focusBorderColor='purple.500'
+                            placeholder={'Name'}
+                            value={form.name}
+                            onChange={(e) => setForm({ ...form, name: e.target.value })}
+                        />
+                    </FormControl>
+                    <FormControl id='surname' isRequired>
+                        <FormLabel>Surname</FormLabel>
+                        <Input
+                            type='text'
+                            focusBorderColor='purple.500'
+                            placeholder={'Surname'}
+                            value={form.surname}
+                            onChange={(e) => setForm({ ...form, surname: e.target.value })}
+                        />
+                    </FormControl>
+                </HStack>
                 <FormControl id='username' isRequired>
                     <FormLabel>Username</FormLabel>
                     <Input
                         type='text'
-                        colorScheme={'p'}
                         focusBorderColor='purple.500'
                         placeholder={'Username'}
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
+                        value={form.username}
+                        onChange={(e) => setForm({ ...form, username: e.target.value })}
                     />
                 </FormControl>
 
@@ -79,10 +102,11 @@ const Signup = ({ refetch }: { refetch: () => void }) => {
                         type='email'
                         focusBorderColor='purple.500'
                         placeholder={'Email'}
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        value={form.email}
+                        onChange={(e) => setForm({ ...form, email: e.target.value })}
                     />
                 </FormControl>
+
                 <FormControl id='password' isRequired>
                     <FormLabel>Password</FormLabel>
                     <InputGroup>
@@ -90,8 +114,8 @@ const Signup = ({ refetch }: { refetch: () => void }) => {
                             type={showPassword ? 'text' : 'password'}
                             focusBorderColor='purple.500'
                             placeholder={'Password'}
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
+                            value={form.password}
+                            onChange={(e) => setForm({ ...form, password: e.target.value })}
                         />
                         <InputRightElement h={'full'}>
                             <Button
@@ -103,9 +127,12 @@ const Signup = ({ refetch }: { refetch: () => void }) => {
                         </InputRightElement>
                     </InputGroup>
                 </FormControl>
+
                 <Stack spacing={10} pt={4}>
                     <HStack spacing={3}>
-                        <Back />
+                        <NavLink to={'/'}>
+                            <Back />
+                        </NavLink>
 
                         <Button
                             loadingText='Submitting'
