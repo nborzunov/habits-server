@@ -28,7 +28,7 @@ const HabitsListHeader = () => {
 
     return (
         <>
-            <Flex justifyContent='space-between' alignItems='center' py='8px' px={2}>
+            <Flex justifyContent='space-between' alignItems='center' p={2}>
                 <Heading as='h3' size='md' mb={'12px'}>
                     All habits
                 </Heading>

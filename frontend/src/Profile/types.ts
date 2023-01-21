@@ -22,7 +22,7 @@ export interface ProfileData {
 
 export type EditProfileFields = 'name' | 'surname' | 'username' | 'bio';
 
-export type FieldsConfig<T = EditProfileFields> = Array<{
+export type FieldsConfig<T> = Array<{
     field: T;
     label: string;
     validationProps: any;

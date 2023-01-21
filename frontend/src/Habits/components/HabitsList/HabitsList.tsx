@@ -34,10 +34,17 @@ const HabitsList = () => {
 
     if (isLoading) return <div>Loading...</div>;
 
+    const noHabits = uncompletedHabits.length === 0 && completedHabits.length === 0;
+
     return (
         <Box borderRightColor='gray.200' borderRightWidth='2px' h='100vh'>
             <HabitsListHeader />
             <Box>
+                {noHabits && (
+                    <Heading p={2} py={4} size={'md'} textAlign={'center'}>
+                        No habits yet, let's create one!
+                    </Heading>
+                )}
                 <Stack spacing={0}>
                     {uncompletedHabits.map((habit) => (
                         <HabitItem key={habit.id} habit={habit} />

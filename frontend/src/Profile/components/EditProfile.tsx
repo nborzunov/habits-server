@@ -1,13 +1,13 @@
 import { Box, Button, Heading, Stack, useToast } from '@chakra-ui/react';
-import React, { useEffect, useState } from 'react';
 import { EditProfileFields, FieldsConfig, User } from '~/Profile/types';
-import EditProfileField from '~/Profile/components/EditProfileField';
-import { useForm } from 'react-hook-form';
 import { useMutation } from '@tanstack/react-query';
-import api from '~/common/services/api';
-import { useSetRecoilState } from 'recoil';
+import { useForm } from 'react-hook-form';
 import { activeUserState } from '~/common/store/atoms';
 import useTitle from '~/common/hooks/useTitle';
+import React from 'react';
+import api from '~/common/services/api';
+import { useSetRecoilState } from 'recoil';
+import FormField from '~/Profile/components/FormField';
 
 type EditProFileData = Required<Pick<User, EditProfileFields>>;
 
@@ -16,7 +16,6 @@ interface Props {
 }
 
 const EditProfile = ({ initialState }: Props) => {
-    const [formValues, setFormValues] = useState(initialState);
     const setActiveUser = useSetRecoilState(activeUserState);
     const toast = useToast();
 
@@ -75,7 +74,7 @@ const EditProfile = ({ initialState }: Props) => {
         });
     };
 
-    const fieldsConfig: FieldsConfig = [
+    const fieldsConfig: FieldsConfig<'name' | 'surname' | 'username' | 'bio'> = [
         {
             field: 'name',
             label: 'Name',
@@ -110,12 +109,6 @@ const EditProfile = ({ initialState }: Props) => {
         //     TODO: avatar image
     ];
 
-    useEffect(() => {
-        const subscription = watch((value) => {
-            setFormValues(value as EditProFileData);
-        });
-        return () => subscription.unsubscribe();
-    }, [watch]);
     return (
         <Box as={'form'} onSubmit={handleSubmit(onSubmit, onError)}>
             <Heading as='h3' size='md' mb={'6'}>
@@ -123,16 +116,15 @@ const EditProfile = ({ initialState }: Props) => {
             </Heading>
             <Stack spacing={4}>
                 {fieldsConfig.map(({ field, label, validationProps }) => (
-                    <EditProfileField
+                    <FormField
                         key={field}
                         field={field}
                         label={label}
-                        value={formValues[field]}
+                        value={watch(field)}
                         initialValue={initialState[field]}
                         resetValue={() =>
                             setValue(field, initialState[field], {
                                 shouldValidate: true,
-                                shouldDirty: true,
                                 shouldTouch: true,
                             })
                         }

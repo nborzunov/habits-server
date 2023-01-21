@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
     Badge,
     Box,
@@ -12,7 +12,7 @@ import {
 } from '@chakra-ui/react';
 import { useForm } from 'react-hook-form';
 import { FieldsConfig, User } from '~/Profile/types';
-import EditProfileField from '~/Profile/components/EditProfileField';
+import FormField from '~/Profile/components/FormField';
 
 type ChangeEmailData = Required<Pick<User, 'email'>>;
 
@@ -33,14 +33,6 @@ const ChangeEmail = ({ initialState, user }: Props) => {
         mode: 'all',
         defaultValues: initialState,
     });
-
-    const [formValues, setFormValues] = useState(initialState);
-    useEffect(() => {
-        const subscription = watch((value) => {
-            setFormValues(value as any);
-        });
-        return () => subscription.unsubscribe();
-    }, [watch]);
 
     const onSubmit = (_data: any) => {
         alert('TODO');
@@ -113,16 +105,15 @@ const ChangeEmail = ({ initialState, user }: Props) => {
                     </Flex>
                 </Flex>
                 {fieldsConfig.map(({ field, label, validationProps }) => (
-                    <EditProfileField
+                    <FormField
                         key={field}
                         field={field}
                         label={label}
-                        value={formValues[field]}
+                        value={watch(field)}
                         initialValue={initialState[field]}
                         resetValue={() =>
                             setValue(field, initialState[field], {
                                 shouldValidate: true,
-                                shouldDirty: true,
                                 shouldTouch: true,
                             })
                         }

@@ -12,33 +12,38 @@ import {
 } from '@chakra-ui/react';
 import Icons from '~/common/services/Icons';
 import React from 'react';
-import { EditProfileFields } from '~/Profile/types';
-import ErrorWrapper from '~/common/components/ErrorWrapper';
 
-interface EditProfileFieldProps {
-    field: EditProfileFields;
+interface FormFieldProps {
+    field: string;
     label: string;
-    initialValue: string;
-    value: string;
+    initialValue?: string;
+    value?: string;
     validationError: any;
     validationProps: any;
-    resetValue: () => void;
+    hideResetButton: boolean;
+    isRequired: boolean;
+    minWidth: string;
+    resetValue?: () => void;
 }
 
-const EditProfileField = ({
+const FormField = ({
     field,
     label,
     initialValue,
     value,
+    hideResetButton,
+    minWidth,
+    isRequired,
     validationError,
     validationProps,
     resetValue,
-}: EditProfileFieldProps) => {
+}: FormFieldProps) => {
+    console.log(validationError);
     return (
-        <ErrorWrapper error={validationError}>
-            <FormControl isInvalid={validationError}>
+        <Tooltip hasArrow bg='red.600' label={validationError?.message} isOpen={validationError}>
+            <FormControl isInvalid={validationError} isRequired={isRequired}>
                 <Flex justifyContent={'space-between'}>
-                    <FormLabel mr={'6'} lineHeight={'40px'} width={'140px'}>
+                    <FormLabel mr={'6'} lineHeight={'40px'} width={minWidth}>
                         {label}:
                     </FormLabel>
                     <InputGroup>
@@ -60,7 +65,7 @@ const EditProfileField = ({
                                 {...validationProps}
                             />
                         )}
-                        {initialValue !== value && (
+                        {initialValue !== value && !hideResetButton && (
                             <InputRightElement>
                                 <Tooltip label={'Reset to previous'}>
                                     <IconButton
@@ -77,8 +82,14 @@ const EditProfileField = ({
                     </InputGroup>
                 </Flex>
             </FormControl>
-        </ErrorWrapper>
+        </Tooltip>
     );
 };
 
-export default EditProfileField
+FormField.defaultProps = {
+    hideResetButton: false,
+    isRequired: false,
+    minWidth: '140px',
+};
+
+export default FormField;
