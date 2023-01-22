@@ -21,8 +21,14 @@ async fn main() -> std::io::Result<()> {
     dotenv().ok();
     let uri = match var("DATABASE_URL") {
         Ok(v) => v.to_string(),
-        Err(_) => format!("Error loading env variable"),
+        Err(_) => format!("Error loading DATABASE_URL variable"),
     };
+
+    let port = var("PORT")
+        .unwrap_or_else(|_| "8080".to_string())
+        .parse()
+        .expect("PORT must be a number");
+
     let client = Client::with_uri_str(uri).await.unwrap();
 
     HttpServer::new(move || {
@@ -40,7 +46,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(Data::new(client.clone()))
             .service(routes::routes())
     })
-    .bind(("127.0.0.1", 8080))?
+    .bind(("127.0.0.1", port))?
     .run()
     .await
 }
