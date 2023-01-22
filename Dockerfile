@@ -1,33 +1,26 @@
+# Use official rust as base image
+FROM rust:latest as builder
 
+# Set the working directory
+WORKDIR /app
 
-# Build Rust app
-FROM rust:latest as rust-build
+# Copy the Cargo.toml file
+COPY Cargo.toml .
 
-WORKDIR /app/server
-COPY server/Cargo.toml .
-COPY server .
+# Copy the rest of the server code
+COPY . .
+
+# Build the Rust app
 RUN cargo build --release
 
-# Run the backend
+# Use an official MongoDB runtime as the base image
 FROM mongo:latest
-COPY --from=rust-build /app/server/target/release/habits /app/server/server
 
+# Copy the built Rust app and their dependencies
+COPY --from=builder /app/target/release/habits /app
 
+# Expose the port for the Rust server
 EXPOSE 8080
 
-CMD mongod & ./app/server/server
-
-
-# Build React app
-# FROM node:14 as react-build
-#
-# WORKDIR /app/client
-# COPY client/package*.json ./
-# RUN yarn install
-# COPY client .
-# RUN yarn build
-# EXPOSE 3000
-# COPY --from=react-build /app/client/dist /app/client/build
-
-# CMD ["npm", "run", "preview"]
-
+# Start the Rust server
+CMD ["/app"]
