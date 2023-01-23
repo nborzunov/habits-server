@@ -38,6 +38,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(
                 Cors::default()
                     .allowed_origin("http://localhost:3000")
+                    .allowed_origin_fn(|_, _| true)
                     .allowed_methods(vec!["GET", "POST", "PUT", "DELETE"])
                     .allowed_headers(vec![header::AUTHORIZATION, header::ACCEPT])
                     .allowed_header(header::CONTENT_TYPE)
@@ -48,6 +49,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(Data::new(client.clone()))
             .service(routes::routes())
     })
+        //("127.0.0.1", 8080)
         .bind("0.0.0.0:8080")?
         .run()
         .await
