@@ -25,11 +25,11 @@ async fn main() -> std::io::Result<()> {
         Ok(v) => v.to_string(),
         Err(_) => format!("Error loading DATABASE_URL variable"),
     };
-    // let port = var("PORT")
-    //     .unwrap_or_else(|_| "8080".to_string())
-    //     .parse()
-    //     .expect("PORT must be a number");
-    // let url = var("URL").unwrap_or_else(|_| "127.0.0.1".to_string());
+    let port = var("PORT")
+        .unwrap_or_else(|_| "8080".to_string())
+        .parse()
+        .expect("PORT must be a number");
+    let url = var("URL").unwrap_or_else(|_| "127.0.0.1".to_string());
 
     let client = Client::with_uri_str(uri).await.unwrap();
 
@@ -50,7 +50,7 @@ async fn main() -> std::io::Result<()> {
             .service(routes::routes())
     })
         //("127.0.0.1", 8080)
-        .bind("0.0.0.0:8080")?
+        .bind(format!("0.0.0.0:{}", port))?
         .run()
         .await
 }
