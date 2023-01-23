@@ -24,3 +24,4 @@
 
                 # Start the Rust server
                 CMD ["/app"]
+                RUN apt-get update -y && apt-get install cargo -y
