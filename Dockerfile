@@ -1,27 +1,23 @@
-                # Use official rust as base image
-                FROM rust:latest as builder
+# Rust as the base image
+FROM rust:latest
 
-                # Set the working directory
-                WORKDIR /app
+# 1. Create a new empty shell project
+RUN USER=root cargo new --bin habits
+WORKDIR /habits
 
-                # Copy the Cargo.toml file
-                COPY Cargo.toml .
+# 2. Copy our manifests
+COPY ./Cargo.lock ./Cargo.lock
+COPY ./Cargo.toml ./Cargo.toml
 
-                # Copy the rest of the server code
-                COPY . .
+# 3. Build only the dependencies to cache them
+RUN cargo build --release
+RUN rm src/*.rs
 
-                # Build the Rust app
-                RUN cargo build --release
+# 4. Now that the dependency is built, copy your source code
+COPY ./src ./src
 
-                # Use an official alpine as the base image
-                FROM alpine:latest
+# 5. Build for release.
+RUN rm ./target/release/deps/habits*
+RUN cargo install --path .
 
-                # Copy the built Rust app and its dependencies
-                COPY --from=builder /app/target/release/habits /app
-
-                # Expose the port for the Rust server
-                EXPOSE 8080
-
-                # Start the Rust server
-                CMD ["/app"]
-                RUN apt-get update -y && apt-get install cargo -y
+CMD ["cargo", "run", "--release"]
