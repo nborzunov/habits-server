@@ -1,7 +1,7 @@
 use std::env::{set_var, var};
 
 use actix_cors::Cors;
-use actix_web::{http::header, middleware::Logger};
+use actix_web::{ http::header, middleware::Logger};
 use actix_web::{App, HttpServer, web::Data};
 use dotenv::dotenv;
 use mongodb::Client;
@@ -14,6 +14,7 @@ mod services;
 
 static DB_NAME: &str = "dev";
 
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     set_var("RUST_LOG", "actix_web=info");
@@ -24,11 +25,11 @@ async fn main() -> std::io::Result<()> {
         Ok(v) => v.to_string(),
         Err(_) => format!("Error loading DATABASE_URL variable"),
     };
-    let port = var("PORT")
-        .unwrap_or_else(|_| "8080".to_string())
-        .parse()
-        .expect("PORT must be a number");
-    let url = var("URL").unwrap_or_else(|_| "127.0.0.1".to_string());
+    // let port = var("PORT")
+    //     .unwrap_or_else(|_| "8080".to_string())
+    //     .parse()
+    //     .expect("PORT must be a number");
+    // let url = var("URL").unwrap_or_else(|_| "127.0.0.1".to_string());
 
     let client = Client::with_uri_str(uri).await.unwrap();
 
@@ -47,7 +48,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(Data::new(client.clone()))
             .service(routes::routes())
     })
-        .bind((url, port))?
+        .bind("0.0.0.0:8080")?
         .run()
         .await
 }
