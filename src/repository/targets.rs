@@ -23,14 +23,14 @@ pub async fn create(
     }
     let result = match target.target_type {
         TargetType::Done => client
-            .database(DB_NAME)
+            .database(&DB_NAME)
             .collection(COLL_NAME)
             .insert_one(target, None)
             .await
             .map(|_| ())
             .map_err(|_| "Failed to create target".to_string()),
         TargetType::Skip => client
-            .database(DB_NAME)
+            .database(&DB_NAME)
             .collection::<Target>(COLL_NAME)
             .update_one(
                 doc! { "_id": target.id.unwrap() },
@@ -41,7 +41,7 @@ pub async fn create(
             .map(|_| ())
             .map_err(|_| "Failed to update target".to_string()),
         TargetType::Empty => client
-            .database(DB_NAME)
+            .database(&DB_NAME)
             .collection::<Target>(COLL_NAME)
             .delete_one(doc! { "_id": target.id.unwrap() }, None)
             .await
@@ -60,7 +60,7 @@ pub async fn get_all(
     habit_id: &ObjectId,
 ) -> Result<Vec<Target>, String> {
     let docs = client
-        .database(DB_NAME)
+        .database(&DB_NAME)
         .collection::<Target>(COLL_NAME)
         .find(doc! { "habitId": habit_id}, None)
         .await;

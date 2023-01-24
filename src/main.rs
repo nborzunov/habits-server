@@ -1,10 +1,12 @@
 use std::env::{set_var, var};
 
 use actix_cors::Cors;
-use actix_web::{ http::header, middleware::Logger};
-use actix_web::{App, HttpServer, web::Data};
+use actix_web::{http::header, middleware::Logger};
+use actix_web::{web::Data, App, HttpServer};
 use dotenv::dotenv;
 use mongodb::Client;
+
+use lazy_static::lazy_static;
 
 mod middlewares;
 mod models;
@@ -12,8 +14,12 @@ mod repository;
 mod routes;
 mod services;
 
-static DB_NAME: &str = "dev";
-
+lazy_static! {
+    pub static ref DB_NAME: String = match var("DB_NAME") {
+        Ok(v) => v,
+        Err(_) => panic!("Error loading DB_NAME variable"),
+    };
+}
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -49,8 +55,8 @@ async fn main() -> std::io::Result<()> {
             .app_data(Data::new(client.clone()))
             .service(routes::routes())
     })
-        //("127.0.0.1", 8080)
-        .bind(format!("0.0.0.0:{}", port))?
-        .run()
-        .await
+    //("127.0.0.1", 8080)
+    .bind(format!("0.0.0.0:{}", port))?
+    .run()
+    .await
 }

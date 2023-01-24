@@ -75,6 +75,7 @@ impl UserDetails {
 }
 
 #[derive(Debug, Deserialize, Validate, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct UserData {
     #[validate(length(min = 3))]
     pub name: String,
@@ -89,6 +90,7 @@ pub struct UserData {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct UpdateUserData {
     pub name: Option<String>,
     pub surname: Option<String>,
@@ -96,4 +98,11 @@ pub struct UpdateUserData {
     pub email: Option<String>,
     pub bio: Option<String>,
     pub image: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct ChangePasswordData {
+    pub current_password: String,
+    pub new_password: String,
 }

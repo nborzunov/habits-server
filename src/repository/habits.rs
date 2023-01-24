@@ -14,7 +14,7 @@ const COLL_NAME: &str = "habits";
 
 pub async fn get_all(client: web::Data<Client>, user_id: ObjectId) -> Result<Vec<Habit>, String> {
     let docs = client
-        .database(DB_NAME)
+        .database(&DB_NAME)
         .collection::<Habit>(COLL_NAME)
         .find(
             doc! {
@@ -41,7 +41,7 @@ pub async fn get_all(client: web::Data<Client>, user_id: ObjectId) -> Result<Vec
 
 pub async fn get_by_id(client: web::Data<Client>, id: ObjectId) -> Result<Habit, String> {
     match client
-        .database(DB_NAME)
+        .database(&DB_NAME)
         .collection(COLL_NAME)
         .find_one(doc! { "_id": id }, None)
         .await
@@ -74,7 +74,7 @@ pub async fn get_details(client: web::Data<Client>, id: ObjectId) -> Result<Habi
 
 pub async fn create(client: web::Data<Client>, habit: Habit) -> Result<ObjectId, String> {
     client
-        .database(DB_NAME)
+        .database(&DB_NAME)
         .collection(COLL_NAME)
         .insert_one(habit, None)
         .await
@@ -91,7 +91,7 @@ pub async fn edit(
     habit: HabitData,
 ) -> Result<(), String> {
     client
-        .database(DB_NAME)
+        .database(&DB_NAME)
         .collection::<Habit>(COLL_NAME)
         .update_one(
             doc! {"_id": id, "userId": user_id },
@@ -109,7 +109,7 @@ pub async fn delete(
     id: ObjectId,
 ) -> Result<(), String> {
     client
-        .database(DB_NAME)
+        .database(&DB_NAME)
         .collection::<Habit>(COLL_NAME)
         .delete_one(doc! {"_id": id, "userId": user_id }, None)
         .await
@@ -123,7 +123,7 @@ pub async fn archive(
     id: ObjectId,
 ) -> Result<(), String> {
     client
-        .database(DB_NAME)
+        .database(&DB_NAME)
         .collection::<Habit>(COLL_NAME)
         .update_one(
             doc! { "_id": id, "userId": user_id },

@@ -4,7 +4,8 @@ use actix_web::{get, post, put, web, HttpRequest, HttpResponse, Scope};
 use mongodb::Client;
 
 use crate::middlewares::auth::AuthenticationService;
-use crate::models::user::{UpdateUserData, UserData, UserDetails};
+use crate::models::errors::FormError;
+use crate::models::user::{ChangePasswordData, UpdateUserData, UserData, UserDetails};
 use crate::repository;
 use crate::services::crypto::Auth;
 use crate::services::hashing::hashing;
@@ -14,6 +15,7 @@ pub fn routes() -> Scope {
         .service(create)
         .service(get)
         .service(update)
+        .service(change_password)
 }
 
 #[post("/signup")]
@@ -68,5 +70,30 @@ pub async fn update(
             Err(err) => HttpResponse::InternalServerError().body(err),
         },
         Err(err) => HttpResponse::InternalServerError().body(err),
+    }
+}
+
+#[post("/me/change-password")]
+pub async fn change_password(
+    user: AuthenticationService,
+    client: web::Data<Client>,
+    form: web::Json<ChangePasswordData>,
+) -> HttpResponse {
+    match repository::users::change_password(
+        client.clone(),
+        user.0.id.unwrap(),
+        form.clone().current_password,
+        form.clone().new_password,
+    )
+    .await
+    {
+        Ok(_) => HttpResponse::Ok().into(),
+        Err(err) => {
+            let (field, message) = err;
+            HttpResponse::InternalServerError().json(FormError {
+                field: &field,
+                message: &message,
+            })
+        }
     }
 }

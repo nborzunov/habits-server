@@ -5,6 +5,7 @@ use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, TokenData, Validation};
 use mongodb::bson::oid::ObjectId;
 use pwhash::bcrypt;
+use pwhash::bcrypt::BcryptSetup;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone)]
@@ -15,7 +16,16 @@ pub struct CryptoService {
 
 impl CryptoService {
     pub async fn hash_password(&self, password: String) -> Result<String, ()> {
-        Ok(bcrypt::hash(password).unwrap())
+        match bcrypt::hash_with(
+            BcryptSetup {
+                salt: Some(&self.key.clone()),
+                ..Default::default()
+            },
+            password,
+        ) {
+            Ok(res) => Ok(res),
+            _ => Err(()),
+        }
     }
 
     pub async fn verify_password(&self, password: &str, password_hash: &str) -> Result<bool, ()> {

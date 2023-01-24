@@ -23,7 +23,7 @@ pub async fn create(client: web::Data<Client>, new_user: UserData) -> Result<Use
     };
     // create validation for new user fields
     let user_id = match client
-        .database(DB_NAME)
+        .database(&DB_NAME)
         .collection::<User>(COLL_NAME)
         .insert_one(user_model, None)
         .await
@@ -37,7 +37,7 @@ pub async fn create(client: web::Data<Client>, new_user: UserData) -> Result<Use
 
 pub async fn get_by_id(client: web::Data<Client>, id: ObjectId) -> Result<User, String> {
     let user = match client
-        .database(DB_NAME)
+        .database(&DB_NAME)
         .collection::<User>(COLL_NAME)
         .find_one(
             doc! {
@@ -59,7 +59,7 @@ pub async fn get_by_id(client: web::Data<Client>, id: ObjectId) -> Result<User, 
 
 pub async fn get_by_username(client: web::Data<Client>, username: String) -> Result<User, String> {
     let user = match client
-        .database(DB_NAME)
+        .database(&DB_NAME)
         .collection::<User>(COLL_NAME)
         .find_one(
             doc! {
@@ -85,7 +85,7 @@ pub async fn update(
     user: UpdateUserData,
 ) -> Result<(), String> {
     client
-        .database(DB_NAME)
+        .database(&DB_NAME)
         .collection::<User>(COLL_NAME)
         .update_one(
             doc! {"_id": id },
@@ -95,4 +95,50 @@ pub async fn update(
         .await
         .map(|_| ())
         .map_err(|_| "Failed to update user".to_string())
+}
+
+pub async fn change_password(
+    client: web::Data<Client>,
+    id: ObjectId,
+    old_password: String,
+    new_password: String,
+) -> Result<(), (String, String)> {
+    let user = match get_by_id(client.clone(), id).await {
+        Ok(user) => user,
+        Err(err) => return Err(("".to_string(), err.to_string())),
+    };
+
+    if !hashing()
+        .verify_password(&old_password, &user.password_hash)
+        .await
+        .unwrap()
+    {
+        return Err((
+            "currentPassword".to_string(),
+            "Old password is incorrect".to_string(),
+        ));
+    }
+
+    let new_password_hash = hashing().hash_password(new_password.clone()).await.unwrap();
+
+    if user.password_hash == new_password_hash {
+        return Err((
+            "newPassword".to_string(),
+            "New password must be different from current".to_string(),
+        ));
+    }
+
+    match client
+        .database(&DB_NAME)
+        .collection::<User>(COLL_NAME)
+        .update_one(
+            doc! {"_id": id },
+            doc! {"$set": { "password_hash": new_password_hash } },
+            None,
+        )
+        .await
+    {
+        Ok(_) => Ok(()),
+        Err(err) => Err(("".to_string(), err.to_string())),
+    }
 }
