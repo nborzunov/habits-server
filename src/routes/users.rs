@@ -4,7 +4,6 @@ use actix_web::{get, post, put, web, HttpRequest, HttpResponse, Scope};
 use mongodb::Client;
 
 use crate::middlewares::auth::AuthenticationService;
-use crate::models::errors::FormError;
 use crate::models::user::{ChangePasswordData, UpdateUserData, UserData, UserDetails};
 use crate::repository;
 use crate::services::crypto::Auth;
@@ -28,7 +27,7 @@ pub async fn create(client: web::Data<Client>, form: web::Json<UserData>) -> Htt
 
             HttpResponse::Ok().json(Auth { token })
         }
-        Err(_) => HttpResponse::InternalServerError().body("Server error"),
+        Err(err) => HttpResponse::BadRequest().json(err),
     }
 }
 
@@ -88,12 +87,6 @@ pub async fn change_password(
     .await
     {
         Ok(_) => HttpResponse::Ok().into(),
-        Err(err) => {
-            let (field, message) = err;
-            HttpResponse::InternalServerError().json(FormError {
-                field: &field,
-                message: &message,
-            })
-        }
+        Err(err) => HttpResponse::BadRequest().json(err),
     }
 }

@@ -3,13 +3,17 @@ use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
 use mongodb::{bson, Client};
 
+use crate::models::errors::FormError;
 use crate::models::user::{UpdateUserData, User, UserData};
 use crate::services::hashing::hashing;
 use crate::DB_NAME;
 
 const COLL_NAME: &str = "users";
 
-pub async fn create(client: web::Data<Client>, new_user: UserData) -> Result<User, String> {
+pub async fn create(
+    client: web::Data<Client>,
+    new_user: UserData,
+) -> Result<User, FormError<'static>> {
     let password_hash = hashing()
         .hash_password(new_user.clone().password)
         .await
@@ -18,10 +22,15 @@ pub async fn create(client: web::Data<Client>, new_user: UserData) -> Result<Use
     let user_model = User::new(new_user, password_hash);
 
     match get_by_username(client.clone(), user_model.clone().username.unwrap()).await {
-        Ok(_) => return Err("User already exists".to_string()),
+        Ok(_) => {
+            return Err(FormError {
+                field: "username",
+                message: "User with this username already exists",
+            })
+        }
         Err(_) => (),
     };
-    // create validation for new user fields
+
     let user_id = match client
         .database(&DB_NAME)
         .collection::<User>(COLL_NAME)
@@ -29,10 +38,15 @@ pub async fn create(client: web::Data<Client>, new_user: UserData) -> Result<Use
         .await
     {
         Ok(res) => res.inserted_id.as_object_id().unwrap().clone(),
-        Err(_) => return Err("Failed to create user".to_string()),
+        Err(_) => {
+            return Err(FormError {
+                field: "",
+                message: "Failed to create user",
+            })
+        }
     };
 
-    get_by_id(client, user_id).await
+    Ok(get_by_id(client, user_id).await.unwrap())
 }
 
 pub async fn get_by_id(client: web::Data<Client>, id: ObjectId) -> Result<User, String> {
@@ -102,10 +116,15 @@ pub async fn change_password(
     id: ObjectId,
     old_password: String,
     new_password: String,
-) -> Result<(), (String, String)> {
+) -> Result<(), FormError<'static>> {
     let user = match get_by_id(client.clone(), id).await {
         Ok(user) => user,
-        Err(err) => return Err(("".to_string(), err.to_string())),
+        Err(_) => {
+            return Err(FormError {
+                field: "",
+                message: "Failed to change password",
+            })
+        }
     };
 
     if !hashing()
@@ -113,19 +132,19 @@ pub async fn change_password(
         .await
         .unwrap()
     {
-        return Err((
-            "currentPassword".to_string(),
-            "Old password is incorrect".to_string(),
-        ));
+        return Err(FormError {
+            field: "currentPassword",
+            message: "Old password is incorrect",
+        });
     }
 
     let new_password_hash = hashing().hash_password(new_password.clone()).await.unwrap();
 
     if user.password_hash == new_password_hash {
-        return Err((
-            "newPassword".to_string(),
-            "New password must be different from current".to_string(),
-        ));
+        return Err(FormError {
+            field: "newPassword",
+            message: "New password must be different from current",
+        });
     }
 
     match client
@@ -139,6 +158,11 @@ pub async fn change_password(
         .await
     {
         Ok(_) => Ok(()),
-        Err(err) => Err(("".to_string(), err.to_string())),
+        Err(_) => {
+            return Err(FormError {
+                field: "",
+                message: "Failed to change password",
+            })
+        }
     }
 }
