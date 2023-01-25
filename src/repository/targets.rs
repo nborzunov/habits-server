@@ -126,3 +126,13 @@ pub async fn get_all(
         Err(_) => Err("Failed to get targets".to_string()),
     };
 }
+
+pub async fn clean_data(client: web::Data<Client>, habit_id: &ObjectId) -> Result<(), String> {
+    client
+        .database(&DB_NAME)
+        .collection::<Target>(COLL_NAME)
+        .delete_many(doc! { "habitId": habit_id}, None)
+        .await
+        .map(|_| ())
+        .map_err(|_| "Failed to clean targets".to_string())
+}

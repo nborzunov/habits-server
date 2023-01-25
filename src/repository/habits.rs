@@ -27,8 +27,7 @@ pub async fn get_all(client: web::Data<Client>, user_id: ObjectId) -> Result<Vec
 
     return match docs {
         Ok(cursor) => {
-            let mut habits = cursor.try_collect::<Vec<Habit>>().await.map_err(|err| {
-                println!("{}", err.to_string());
+            let mut habits = cursor.try_collect::<Vec<Habit>>().await.map_err(|_| {
                 return "Failed to collect habits".to_string();
             })?;
             habits.sort_by_key(|h| Reverse(h.created_date.clone()));
@@ -133,4 +132,39 @@ pub async fn archive(
         .await
         .map(|_| ())
         .map_err(|_| "Failed to archive habit".to_string())
+}
+
+pub async fn clean_data(client: web::Data<Client>, user_id: ObjectId) -> Result<(), String> {
+    let habit_ids = get_all(client.clone(), user_id.clone())
+        .await
+        .map_err(|_| "Failed to get habits".to_string())?
+        .iter()
+        .map(|h| h.id.clone().unwrap())
+        .collect::<Vec<ObjectId>>();
+
+    for habit_id in habit_ids.iter() {
+        repository::targets::clean_data(client.clone(), &habit_id).await?;
+    }
+
+    Ok(())
+}
+pub async fn delete_all_habits(client: web::Data<Client>, user_id: ObjectId) -> Result<(), String> {
+    let habit_ids = get_all(client.clone(), user_id.clone())
+        .await
+        .map_err(|_| "Failed to get habits".to_string())?
+        .iter()
+        .map(|h| h.id.clone().unwrap())
+        .collect::<Vec<ObjectId>>();
+
+    for habit_id in habit_ids.iter() {
+        repository::targets::clean_data(client.clone(), &habit_id).await?;
+    }
+
+    client
+        .database(&DB_NAME)
+        .collection::<Habit>(COLL_NAME)
+        .delete_many(doc! {"userId": user_id }, None)
+        .await
+        .map(|_| ())
+        .map_err(|_| "Failed to delete habits".to_string())
 }
