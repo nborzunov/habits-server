@@ -21,37 +21,90 @@ pub async fn create(
     if habit.user_id != user_id {
         return Err("Habit does not belong to user".to_string());
     }
-    let result = match target.target_type {
-        TargetType::Done => client
-            .database(&DB_NAME)
-            .collection(COLL_NAME)
-            .insert_one(target, None)
-            .await
-            .map(|_| ())
-            .map_err(|_| "Failed to create target".to_string()),
-        TargetType::Skip => client
+
+    let current_target_id = match target.id {
+        Some(id) => client
             .database(&DB_NAME)
             .collection::<Target>(COLL_NAME)
-            .update_one(
-                doc! { "_id": target.id.unwrap() },
-                doc! { "$set": { "targetType": "skip" } },
-                None,
-            )
+            .find_one(doc! { "_id": id }, None)
             .await
-            .map(|_| ())
-            .map_err(|_| "Failed to update target".to_string()),
-        TargetType::Empty => client
-            .database(&DB_NAME)
-            .collection::<Target>(COLL_NAME)
-            .delete_one(doc! { "_id": target.id.unwrap() }, None)
-            .await
-            .map(|_| ())
-            .map_err(|_| "Failed to delete target".to_string()),
+            .unwrap()
+            .map(|target| target.id)
+            .unwrap(),
+        None => None,
     };
 
-    match result {
-        Ok(_) => Ok(()),
-        Err(err) => Err(err.to_string()),
+    match current_target_id {
+        Some(current_target_id) => match target.target_type {
+            TargetType::Done => client
+                .database(&DB_NAME)
+                .collection::<Target>(COLL_NAME)
+                .update_one(
+                    doc! {
+                    "habitId": target.habit_id,
+                    "_id": current_target_id
+                     },
+                    doc! { "$set": {
+                        "targetType": "done",
+                        "value": target.value}
+                    },
+                    None,
+                )
+                .await
+                .map(|_| ())
+                .map_err(|_| "Failed to update target".to_string()),
+
+            TargetType::Skip => client
+                .database(&DB_NAME)
+                .collection::<Target>(COLL_NAME)
+                .update_one(
+                    doc! {
+                    "habitId": target.habit_id,
+                    "_id": current_target_id
+                     },
+                    doc! { "$set": {
+                        "targetType": "skip",
+                        "value": 0
+                    } },
+                    None,
+                )
+                .await
+                .map(|_| ())
+                .map_err(|_| "Failed to update target".to_string()),
+
+            TargetType::Empty => {
+                return client
+                    .database(&DB_NAME)
+                    .collection::<Target>(COLL_NAME)
+                    .delete_one(
+                        doc! {
+                            "habitId": target.habit_id,
+                            "_id": current_target_id
+                        },
+                        None,
+                    )
+                    .await
+                    .map(|a| println!("{:?}", a))
+                    .map_err(|_| "Failed to delete target".to_string());
+            }
+        },
+        None => match target.target_type {
+            TargetType::Done => client
+                .database(&DB_NAME)
+                .collection(COLL_NAME)
+                .insert_one(target, None)
+                .await
+                .map(|_| ())
+                .map_err(|_| "Failed to create target".to_string()),
+            TargetType::Skip => client
+                .database(&DB_NAME)
+                .collection(COLL_NAME)
+                .insert_one(target, None)
+                .await
+                .map(|_| ())
+                .map_err(|_| "Failed to create target".to_string()),
+            TargetType::Empty => Err("Empty target".to_string()),
+        },
     }
 }
 

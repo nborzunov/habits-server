@@ -126,7 +126,6 @@ impl TargetDetails {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct TargetData {
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
     pub date: DateTime<Utc>,
     pub target_type: TargetType,
