@@ -17,7 +17,9 @@ pub struct Habit {
     goal: i32,
     goal_type: GoalType,
     pub allow_skip: bool,
-    archived: bool,
+    pub allow_partial_completion: bool,
+    pub allow_over_goal_completion: bool,
+    pub archived: bool,
 }
 
 impl Habit {
@@ -32,6 +34,8 @@ impl Habit {
             goal: data.goal,
             goal_type: data.goal_type.clone(),
             allow_skip: data.allow_skip,
+            allow_partial_completion: data.allow_partial_completion,
+            allow_over_goal_completion: data.allow_over_goal_completion,
             archived: false,
         }
     }
@@ -49,6 +53,8 @@ pub struct HabitDetails {
     goal: i32,
     goal_type: GoalType,
     allow_skip: bool,
+    allow_partial_completion: bool,
+    allow_over_goal_completion: bool,
     start_date: Option<DateTime<Utc>>,
     completed_today: bool,
     current_streak: i32,
@@ -80,6 +86,8 @@ impl HabitDetails {
             goal: h.goal.clone(),
             goal_type: h.goal_type.clone(),
             allow_skip: h.allow_skip,
+            allow_partial_completion: h.allow_partial_completion,
+            allow_over_goal_completion: h.allow_over_goal_completion,
             targets: targets.clone(),
             archived: h.archived,
             completed_today: current_streak_targets
@@ -117,6 +125,8 @@ pub struct HabitData {
     goal: i32,
     goal_type: GoalType,
     allow_skip: bool,
+    allow_partial_completion: bool,
+    allow_over_goal_completion: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

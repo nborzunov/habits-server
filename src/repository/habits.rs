@@ -27,10 +27,10 @@ pub async fn get_all(client: web::Data<Client>, user_id: ObjectId) -> Result<Vec
 
     return match docs {
         Ok(cursor) => {
-            let mut habits = cursor
-                .try_collect::<Vec<Habit>>()
-                .await
-                .map_err(|_| "Failed to collect habits".to_string())?;
+            let mut habits = cursor.try_collect::<Vec<Habit>>().await.map_err(|err| {
+                println!("{}", err.to_string());
+                return "Failed to collect habits".to_string();
+            })?;
             habits.sort_by_key(|h| Reverse(h.created_date.clone()));
 
             Ok(habits)

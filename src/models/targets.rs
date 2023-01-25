@@ -11,6 +11,7 @@ pub struct Target {
     pub date: DateTime<Utc>,
     pub create_date: DateTime<Utc>,
     pub target_type: TargetType,
+    pub value: i32,
 }
 
 impl Target {
@@ -21,6 +22,7 @@ impl Target {
             date: data.date.clone(),
             create_date: Utc::now(),
             target_type: data.target_type.clone(),
+            value: data.value,
         }
     }
 
@@ -105,6 +107,7 @@ pub struct TargetDetails {
     pub date: DateTime<Utc>,
     pub create_date: DateTime<Utc>,
     pub target_type: TargetType,
+    pub value: i32,
 }
 
 impl TargetDetails {
@@ -115,6 +118,7 @@ impl TargetDetails {
             date: target.date.clone(),
             create_date: target.create_date.clone(),
             target_type: target.target_type.clone(),
+            value: target.value,
         }
     }
 }
@@ -127,6 +131,7 @@ pub struct TargetData {
     pub date: DateTime<Utc>,
     pub target_type: TargetType,
     pub habit_id: ObjectId,
+    pub value: i32,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
