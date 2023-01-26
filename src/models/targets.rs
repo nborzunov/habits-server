@@ -12,6 +12,7 @@ pub struct Target {
     pub create_date: DateTime<Utc>,
     pub target_type: TargetType,
     pub value: i32,
+    pub deleted: bool,
 }
 
 impl Target {
@@ -23,6 +24,7 @@ impl Target {
             create_date: Utc::now(),
             target_type: data.target_type.clone(),
             value: data.value,
+            deleted: false,
         }
     }
 

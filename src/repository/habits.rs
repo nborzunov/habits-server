@@ -19,7 +19,8 @@ pub async fn get_all(client: web::Data<Client>, user_id: ObjectId) -> Result<Vec
         .find(
             doc! {
                 "userId": &user_id,
-                "archived": false
+                "archived": false,
+                "deleted": false
             },
             None,
         )
@@ -42,7 +43,14 @@ pub async fn get_by_id(client: web::Data<Client>, id: ObjectId) -> Result<Habit,
     match client
         .database(&DB_NAME)
         .collection(COLL_NAME)
-        .find_one(doc! { "_id": id }, None)
+        .find_one(
+            doc! {
+                "_id": id,
+                "archived": false,
+                "deleted": false
+            },
+            None,
+        )
         .await
     {
         Ok(doc) => match doc {
@@ -110,7 +118,11 @@ pub async fn delete(
     client
         .database(&DB_NAME)
         .collection::<Habit>(COLL_NAME)
-        .delete_one(doc! {"_id": id, "userId": user_id }, None)
+        .update_one(
+            doc! {"_id": id, "userId": user_id },
+            doc! {"$set": { "deleted": true } },
+            None,
+        )
         .await
         .map(|_| ())
         .map_err(|_| "Failed to delete habit".to_string())
@@ -163,7 +175,11 @@ pub async fn delete_all_habits(client: web::Data<Client>, user_id: ObjectId) -> 
     client
         .database(&DB_NAME)
         .collection::<Habit>(COLL_NAME)
-        .delete_many(doc! {"userId": user_id }, None)
+        .update_many(
+            doc! {"userId": user_id },
+            doc! { "$set": { "deleted": true }},
+            None,
+        )
         .await
         .map(|_| ())
         .map_err(|_| "Failed to delete habits".to_string())

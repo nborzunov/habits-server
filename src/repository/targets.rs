@@ -115,7 +115,7 @@ pub async fn get_all(
     let docs = client
         .database(&DB_NAME)
         .collection::<Target>(COLL_NAME)
-        .find(doc! { "habitId": habit_id}, None)
+        .find(doc! { "habitId": habit_id, "deleted": false}, None)
         .await;
 
     return match docs {
@@ -131,7 +131,11 @@ pub async fn clean_data(client: web::Data<Client>, habit_id: &ObjectId) -> Resul
     client
         .database(&DB_NAME)
         .collection::<Target>(COLL_NAME)
-        .delete_many(doc! { "habitId": habit_id}, None)
+        .update_many(
+            doc! { "habitId": habit_id},
+            doc! { "$set": { "deleted": true}},
+            None,
+        )
         .await
         .map(|_| ())
         .map_err(|_| "Failed to clean targets".to_string())

@@ -20,6 +20,7 @@ pub struct Habit {
     pub allow_partial_completion: bool,
     pub allow_over_goal_completion: bool,
     pub archived: bool,
+    pub deleted: bool,
 }
 
 impl Habit {
@@ -37,6 +38,7 @@ impl Habit {
             allow_partial_completion: data.allow_partial_completion,
             allow_over_goal_completion: data.allow_over_goal_completion,
             archived: false,
+            deleted: false,
         }
     }
 }
