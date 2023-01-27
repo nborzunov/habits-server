@@ -74,8 +74,15 @@ impl HabitDetails {
     pub fn parse(h: &Habit, mut targets: Vec<TargetDetails>) -> HabitDetails {
         targets.sort_by_key(|t| t.date.clone());
 
-        let (current_streak_targets, failed_targets) =
-            Target::get_streak_and_failures(targets.clone(), h.allow_skip);
+        if !h.allow_skip {
+            targets.retain(|t| !matches!(t.target_type, TargetType::Skip));
+        }
+        let target_statistics = Target::calculate_statistics(
+            targets.clone(),
+            h.allow_skip,
+            h.allow_partial_completion,
+            h.goal,
+        );
 
         HabitDetails {
             id: h.id.clone().unwrap().to_string(),
@@ -92,21 +99,13 @@ impl HabitDetails {
             allow_over_goal_completion: h.allow_over_goal_completion,
             targets: targets.clone(),
             archived: h.archived,
-            completed_today: current_streak_targets
-                .iter()
-                .any(|target| target.date.date_naive() == Utc::now().date_naive()),
-            current_streak: current_streak_targets.len() as i32,
-            current_streak_start_date: match current_streak_targets
-                .iter()
-                .find(|t| matches!(t.target_type, TargetType::Done))
-            {
-                Some(t) => Some(t.date.clone()),
-                None => None,
-            },
-            completed_targets: Target::get_completed(&targets),
-            failed_targets,
-            total_targets: Target::get_total(&targets),
-            skipped_targets: Target::get_skipped(&targets),
+            completed_today: target_statistics.completed_today,
+            current_streak: target_statistics.current_streak_count,
+            current_streak_start_date: target_statistics.current_streak_start_date,
+            completed_targets: target_statistics.completed_count,
+            failed_targets: target_statistics.failed_count,
+            total_targets: target_statistics.total_count,
+            skipped_targets: target_statistics.skipped_count,
         }
     }
 
