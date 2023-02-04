@@ -1,4 +1,4 @@
-use actix_web::{HttpResponse, Scope, web};
+use actix_web::{web, HttpResponse, Scope};
 
 pub mod auth;
 pub mod habits;
@@ -8,8 +8,6 @@ pub mod users;
 async fn init() -> HttpResponse {
     HttpResponse::Ok().body("Server works!")
 }
-
-
 
 pub fn routes() -> Scope {
     web::scope("")

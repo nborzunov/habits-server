@@ -25,7 +25,7 @@ pub async fn create(
         Ok(_) => {
             return Err(FormError {
                 field: "username",
-                message: "User with this username already exists",
+                message: "profile:username.errors.alreadyExists",
             })
         }
         Err(_) => (),
@@ -41,7 +41,7 @@ pub async fn create(
         Err(_) => {
             return Err(FormError {
                 field: "",
-                message: "Failed to create user",
+                message: "profile:errors.failedToCreate",
             })
         }
     };
@@ -122,7 +122,7 @@ pub async fn change_password(
         Err(_) => {
             return Err(FormError {
                 field: "",
-                message: "Failed to change password",
+                message: "profile:password.errors.failedToChange",
             })
         }
     };
@@ -134,7 +134,7 @@ pub async fn change_password(
     {
         return Err(FormError {
             field: "currentPassword",
-            message: "Old password is incorrect",
+            message: "profile:password.errors.incorrect",
         });
     }
 
@@ -143,7 +143,7 @@ pub async fn change_password(
     if user.password_hash == new_password_hash {
         return Err(FormError {
             field: "newPassword",
-            message: "New password must be different from current",
+            message: "profile:password.errors.sameAsOld",
         });
     }
 
@@ -161,7 +161,7 @@ pub async fn change_password(
         Err(_) => {
             return Err(FormError {
                 field: "",
-                message: "Failed to change password",
+                message: "profile:password.errors.failedToChange",
             })
         }
     }

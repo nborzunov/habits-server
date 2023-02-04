@@ -23,8 +23,8 @@ pub async fn login(client: Data<Client>, form: web::Json<LoginData>) -> HttpResp
         Err(_) => {
             return HttpResponse::BadRequest().json(FormError {
                 field: "username",
-                message: "User with this username does not exist",
-            })
+                message: "profile:username.notFound",
+            });
         }
     };
 
@@ -40,7 +40,7 @@ pub async fn login(client: Data<Client>, form: web::Json<LoginData>) -> HttpResp
     } else {
         HttpResponse::BadRequest().json(FormError {
             field: "password",
-            message: "Invalid password",
+            message: "profile:password.errors.invalid",
         })
     }
 }
