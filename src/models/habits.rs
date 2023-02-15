@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
 
-use crate::models::targets::{Target, TargetDetails, TargetType};
+use crate::models::targets::{Target, TargetDetails, TargetStatistics, TargetType};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -58,13 +58,7 @@ pub struct HabitDetails {
     allow_partial_completion: bool,
     allow_over_goal_completion: bool,
     start_date: Option<DateTime<Utc>>,
-    completed_today: bool,
-    current_streak: i32,
-    current_streak_start_date: Option<DateTime<Utc>>,
-    completed_targets: i32,
-    failed_targets: i32,
-    total_targets: i32,
-    skipped_targets: i32,
+    statistics: TargetStatistics,
     archived: bool,
 
     pub targets: Vec<TargetDetails>,
@@ -77,12 +71,6 @@ impl HabitDetails {
         if !h.allow_skip {
             targets.retain(|t| !matches!(t.target_type, TargetType::Skip));
         }
-        let target_statistics = Target::calculate_statistics(
-            targets.clone(),
-            h.allow_skip,
-            h.allow_partial_completion,
-            h.goal,
-        );
 
         HabitDetails {
             id: h.id.clone().unwrap().to_string(),
@@ -99,13 +87,12 @@ impl HabitDetails {
             allow_over_goal_completion: h.allow_over_goal_completion,
             targets: targets.clone(),
             archived: h.archived,
-            completed_today: target_statistics.completed_today,
-            current_streak: target_statistics.current_streak_count,
-            current_streak_start_date: target_statistics.current_streak_start_date,
-            completed_targets: target_statistics.completed_count,
-            failed_targets: target_statistics.failed_count,
-            total_targets: target_statistics.total_count,
-            skipped_targets: target_statistics.skipped_count,
+            statistics: Target::calculate_statistics(
+                targets.clone(),
+                h.allow_skip,
+                h.allow_partial_completion,
+                h.goal,
+            ),
         }
     }
 
