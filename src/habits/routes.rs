@@ -5,10 +5,10 @@ use actix_web::{delete, get, post, put, web, HttpResponse, Scope};
 use mongodb::bson::oid::ObjectId;
 use mongodb::Client;
 
-use crate::middlewares::auth::AuthenticationService;
-use crate::models::habits::{Habit, HabitData, HabitDetails};
-use crate::models::targets::TargetDetails;
-use crate::repository;
+use crate::common::middlewares::auth::AuthenticationService;
+use crate::habits::models::{Habit, HabitData, HabitDetails};
+use crate::targets::models::TargetDetails;
+use crate::{habits, targets};
 
 pub fn routes() -> Scope {
     web::scope("/habits")
@@ -24,14 +24,14 @@ pub fn routes() -> Scope {
 
 #[get("/")]
 pub async fn get_all(user: AuthenticationService, client: web::Data<Client>) -> HttpResponse {
-    let habits = match repository::habits::get_all(client.clone(), user.0.id.unwrap()).await {
+    let habits = match habits::repository::get_all(client.clone(), user.0.id.unwrap()).await {
         Ok(habits) => habits,
         Err(err) => return HttpResponse::InternalServerError().body(err),
     };
 
     let result = futures::future::join_all(habits.iter().map(|h| async {
         let targets =
-            match repository::targets::get_all(client.clone(), &h.id.clone().unwrap()).await {
+            match targets::repository::get_all(client.clone(), &h.id.clone().unwrap()).await {
                 Ok(targets) => targets.iter().map(|t| TargetDetails::parse(t)).collect(),
                 Err(err) => return Err(err),
             };
@@ -53,13 +53,13 @@ pub async fn create(
     client: web::Data<Client>,
     form: web::Json<HabitData>,
 ) -> HttpResponse {
-    match repository::habits::create(
+    match habits::repository::create(
         client.clone(),
         Habit::new(&form.into_inner(), user.0.id.unwrap()),
     )
     .await
     {
-        Ok(habit_id) => match repository::habits::get_details(client.clone(), habit_id).await {
+        Ok(habit_id) => match habits::repository::get_details(client.clone(), habit_id).await {
             Ok(habit) => HttpResponse::Ok().json(habit),
             Err(err) => HttpResponse::InternalServerError().body(err),
         },
@@ -76,7 +76,7 @@ pub async fn edit(
     form: web::Json<HabitData>,
 ) -> HttpResponse {
     let habit_id = ObjectId::from_str(&path.clone()).unwrap();
-    match repository::habits::edit(
+    match habits::repository::edit(
         client.clone(),
         user.0.id.unwrap(),
         habit_id.clone(),
@@ -84,7 +84,7 @@ pub async fn edit(
     )
     .await
     {
-        Ok(_) => match repository::habits::get_details(client.clone(), habit_id).await {
+        Ok(_) => match habits::repository::get_details(client.clone(), habit_id).await {
             Ok(habit) => HttpResponse::Ok().json(habit),
             Err(err) => HttpResponse::InternalServerError().body(err),
         },
@@ -99,7 +99,7 @@ pub async fn delete(
     path: web::Path<String>,
 ) -> HttpResponse {
     let habit_id = ObjectId::from_str(&path.clone()).unwrap();
-    let res = repository::habits::delete(client, user.0.id.unwrap(), habit_id).await;
+    let res = habits::repository::delete(client, user.0.id.unwrap(), habit_id).await;
 
     match res {
         Ok(_) => HttpResponse::Ok().body("habit deleted"),
@@ -114,7 +114,7 @@ pub async fn archive(
     path: web::Path<String>,
 ) -> HttpResponse {
     let habit_id = ObjectId::from_str(&path.clone()).unwrap();
-    let res = repository::habits::archive(client, user.0.id.unwrap(), habit_id).await;
+    let res = habits::repository::archive(client, user.0.id.unwrap(), habit_id).await;
     match res {
         Ok(_) => HttpResponse::Ok().body("habit archived"),
         Err(_) => HttpResponse::InternalServerError().body("Server error"),
@@ -128,10 +128,10 @@ pub async fn clean_habit(
     path: web::Path<String>,
 ) -> HttpResponse {
     let habit_id = ObjectId::from_str(&path.clone()).unwrap();
-    let res = repository::targets::clean_data(client.clone(), &habit_id).await;
+    let res = targets::repository::clean_data(client.clone(), &habit_id).await;
     match res {
-        Ok(_) => match repository::habits::get_by_id(client.clone(), habit_id.clone()).await {
-            Ok(_) => match repository::habits::get_details(client.clone(), habit_id).await {
+        Ok(_) => match habits::repository::get_by_id(client.clone(), habit_id.clone()).await {
+            Ok(_) => match habits::repository::get_details(client.clone(), habit_id).await {
                 Ok(habit) => HttpResponse::Ok().json(habit),
                 Err(err) => HttpResponse::InternalServerError().body(err),
             },
@@ -143,7 +143,7 @@ pub async fn clean_habit(
 
 #[post("/clean")]
 pub async fn clean_habits(user: AuthenticationService, client: web::Data<Client>) -> HttpResponse {
-    match repository::habits::clean_data(client, user.0.id.unwrap()).await {
+    match habits::repository::clean_data(client, user.0.id.unwrap()).await {
         Ok(_) => HttpResponse::Ok().body("habits cleaned"),
         Err(_) => HttpResponse::InternalServerError().body("Server error"),
     }
@@ -151,7 +151,7 @@ pub async fn clean_habits(user: AuthenticationService, client: web::Data<Client>
 
 #[delete("/")]
 pub async fn delete_habits(user: AuthenticationService, client: web::Data<Client>) -> HttpResponse {
-    match repository::habits::delete_all_habits(client, user.0.id.unwrap()).await {
+    match habits::repository::delete_all_habits(client, user.0.id.unwrap()).await {
         Ok(_) => HttpResponse::Ok().body("habits deleted"),
         Err(_) => HttpResponse::InternalServerError().body("Server error"),
     }

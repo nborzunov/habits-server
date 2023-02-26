@@ -1,7 +1,6 @@
+use crate::common::services::crypto::CryptoService;
 use std::env;
 use std::sync::Arc;
-
-use crate::services::crypto::CryptoService;
 
 pub fn hashing() -> CryptoService {
     let secret_key = env::var("SECRET_KEY").expect("SECRET_KEY must be set");

@@ -1,6 +1,9 @@
 use std::pin::Pin;
 use std::str::FromStr;
 
+use crate::common::services::hashing::hashing;
+use crate::users;
+use crate::users::models::User;
 use actix_web::error::ErrorUnauthorized;
 use actix_web::web::Data;
 use actix_web::{dev, Error, FromRequest, HttpRequest};
@@ -8,10 +11,6 @@ use futures::future::ready;
 use futures::Future;
 use mongodb::bson::oid::ObjectId;
 use mongodb::Client;
-
-use crate::models::user::User;
-use crate::repository;
-use crate::services::hashing::hashing;
 
 #[derive(Debug)]
 pub struct AuthenticationService(pub User);
@@ -36,7 +35,7 @@ impl FromRequest for AuthenticationService {
         Box::pin(async move {
             match crypto.verify_jwt(token).await {
                 Ok(v) => {
-                    repository::users::get_by_id(client, ObjectId::from_str(&v.claims.sub).unwrap())
+                    users::repository::get_by_id(client, ObjectId::from_str(&v.claims.sub).unwrap())
                         .await
                         .and_then(|u| Ok(AuthenticationService(u)))
                         .map_err(|_| ErrorUnauthorized("DB error!").into())

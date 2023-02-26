@@ -4,8 +4,8 @@ use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
 use mongodb::Client;
 
-use crate::models::targets::{Target, TargetType};
-use crate::{repository, DB_NAME};
+use crate::targets::models::{Target, TargetType};
+use crate::{habits, DB_NAME};
 
 const COLL_NAME: &str = "targets";
 
@@ -14,7 +14,7 @@ pub async fn create(
     user_id: ObjectId,
     target: Target,
 ) -> Result<(), String> {
-    let habit = match repository::habits::get_by_id(client.clone(), target.habit_id.clone()).await {
+    let habit = match habits::repository::get_by_id(client.clone(), target.habit_id.clone()).await {
         Ok(habit) => habit,
         Err(err) => return Err(err),
     };

@@ -1,12 +1,11 @@
+use crate::auth::models::LoginData;
+use crate::common::models::errors::FormError;
+use crate::common::services::crypto::Auth;
+use crate::common::services::hashing::hashing;
+use crate::users;
 use actix_web::web::Data;
 use actix_web::{post, web, HttpResponse, Scope};
 use mongodb::Client;
-
-use crate::models::auth::LoginData;
-use crate::models::errors::FormError;
-use crate::repository;
-use crate::services::crypto::Auth;
-use crate::services::hashing::hashing;
 
 pub fn routes() -> Scope {
     web::scope("/auth").service(login)
@@ -17,7 +16,7 @@ pub async fn login(client: Data<Client>, form: web::Json<LoginData>) -> HttpResp
     let username = form.username.clone();
     let password = form.password.clone();
 
-    let user = match repository::users::get_by_username(client.clone(), username.to_string()).await
+    let user = match users::repository::get_by_username(client.clone(), username.to_string()).await
     {
         Ok(user) => user,
         Err(_) => {

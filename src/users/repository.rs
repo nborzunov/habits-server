@@ -3,9 +3,9 @@ use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
 use mongodb::{bson, Client};
 
-use crate::models::errors::FormError;
-use crate::models::user::{UpdateUserData, User, UserData};
-use crate::services::hashing::hashing;
+use crate::common::models::errors::FormError;
+use crate::common::services::hashing::hashing;
+use crate::users::models::{UpdateUserData, User, UserData};
 use crate::DB_NAME;
 
 const COLL_NAME: &str = "users";

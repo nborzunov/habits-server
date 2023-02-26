@@ -6,9 +6,9 @@ use mongodb::bson::doc;
 use mongodb::bson::oid::ObjectId;
 use mongodb::{bson, Client};
 
-use crate::models::habits::{Habit, HabitData, HabitDetails};
-use crate::models::targets::TargetDetails;
-use crate::{repository, DB_NAME};
+use crate::habits::models::{Habit, HabitData, HabitDetails};
+use crate::targets::models::TargetDetails;
+use crate::{targets, DB_NAME};
 
 const COLL_NAME: &str = "habits";
 
@@ -70,7 +70,7 @@ pub async fn get_details(client: web::Data<Client>, id: ObjectId) -> Result<Habi
         Err(err) => return Err(err),
     };
 
-    match repository::targets::get_all(client.clone(), &habit.id.clone().unwrap()).await {
+    match targets::repository::get_all(client.clone(), &habit.id.clone().unwrap()).await {
         Ok(targets) => Ok(HabitDetails::parse(
             &habit,
             targets.iter().map(|t| TargetDetails::parse(t)).collect(),
@@ -155,7 +155,7 @@ pub async fn clean_data(client: web::Data<Client>, user_id: ObjectId) -> Result<
         .collect::<Vec<ObjectId>>();
 
     for habit_id in habit_ids.iter() {
-        repository::targets::clean_data(client.clone(), &habit_id).await?;
+        targets::repository::clean_data(client.clone(), &habit_id).await?;
     }
 
     Ok(())
@@ -169,7 +169,7 @@ pub async fn delete_all_habits(client: web::Data<Client>, user_id: ObjectId) -> 
         .collect::<Vec<ObjectId>>();
 
     for habit_id in habit_ids.iter() {
-        repository::targets::clean_data(client.clone(), &habit_id).await?;
+        targets::repository::clean_data(client.clone(), &habit_id).await?;
     }
 
     client

@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
 
-use crate::models::targets::{Target, TargetDetails, TargetStatistics, TargetType};
+use crate::targets::models::{Target, TargetDetails, TargetStatistics, TargetType};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]

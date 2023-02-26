@@ -8,11 +8,12 @@ use mongodb::Client;
 
 use lazy_static::lazy_static;
 
-mod middlewares;
-mod models;
-mod repository;
+mod auth;
+mod common;
+mod habits;
 mod routes;
-mod services;
+mod targets;
+mod users;
 
 lazy_static! {
     pub static ref DB_NAME: String = match var("DB_NAME") {

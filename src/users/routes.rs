@@ -3,11 +3,11 @@ use std::str::FromStr;
 use actix_web::{get, post, put, web, HttpRequest, HttpResponse, Scope};
 use mongodb::Client;
 
-use crate::middlewares::auth::AuthenticationService;
-use crate::models::user::{ChangePasswordData, UpdateUserData, UserData, UserDetails};
-use crate::repository;
-use crate::services::crypto::Auth;
-use crate::services::hashing::hashing;
+use crate::common::middlewares::auth::AuthenticationService;
+use crate::common::services::crypto::Auth;
+use crate::common::services::hashing::hashing;
+use crate::users;
+use crate::users::models::{ChangePasswordData, UpdateUserData, UserData, UserDetails};
 
 pub fn routes() -> Scope {
     web::scope("/users")
@@ -19,7 +19,7 @@ pub fn routes() -> Scope {
 
 #[post("/signup")]
 pub async fn create(client: web::Data<Client>, form: web::Json<UserData>) -> HttpResponse {
-    let res = repository::users::create(client.clone(), form.clone()).await;
+    let res = users::repository::create(client.clone(), form.clone()).await;
 
     match res {
         Ok(user) => {
@@ -44,7 +44,7 @@ pub async fn get(client: web::Data<Client>, req: HttpRequest) -> HttpResponse {
     let verified = hashing().verify_jwt(token.to_string()).await;
     match verified {
         Ok(v) => {
-            let user = repository::users::get_by_id(
+            let user = users::repository::get_by_id(
                 client.clone(),
                 mongodb::bson::oid::ObjectId::from_str(&v.claims.sub.clone()).unwrap(),
             )
@@ -63,8 +63,8 @@ pub async fn update(
     form: web::Json<UpdateUserData>,
 ) -> HttpResponse {
     let user_id = user.0.id.unwrap();
-    match repository::users::update(client.clone(), user.0.id.unwrap(), form.into_inner()).await {
-        Ok(_) => match repository::users::get_by_id(client.clone(), user_id).await {
+    match users::repository::update(client.clone(), user.0.id.unwrap(), form.into_inner()).await {
+        Ok(_) => match users::repository::get_by_id(client.clone(), user_id).await {
             Ok(u) => HttpResponse::Ok().json(UserDetails::parse(&u)),
             Err(err) => HttpResponse::InternalServerError().body(err),
         },
@@ -78,7 +78,7 @@ pub async fn change_password(
     client: web::Data<Client>,
     form: web::Json<ChangePasswordData>,
 ) -> HttpResponse {
-    match repository::users::change_password(
+    match users::repository::change_password(
         client.clone(),
         user.0.id.unwrap(),
         form.clone().current_password,
