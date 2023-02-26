@@ -19,6 +19,8 @@ pub struct Habit {
     pub allow_skip: bool,
     pub allow_partial_completion: bool,
     pub allow_over_goal_completion: bool,
+    can_be_finished: bool,
+    total_goal: i32,
     pub archived: bool,
     pub deleted: bool,
 }
@@ -37,6 +39,8 @@ impl Habit {
             allow_skip: data.allow_skip,
             allow_partial_completion: data.allow_partial_completion,
             allow_over_goal_completion: data.allow_over_goal_completion,
+            can_be_finished: data.can_be_finished,
+            total_goal: data.total_goal,
             archived: false,
             deleted: false,
         }
@@ -52,15 +56,16 @@ pub struct HabitDetails {
     periodicity: Periodicity,
     periodicity_value: Option<DaysSequence>,
     created_date: DateTime<Utc>,
+    start_date: Option<DateTime<Utc>>,
     goal: i32,
     goal_type: GoalType,
     allow_skip: bool,
     allow_partial_completion: bool,
     allow_over_goal_completion: bool,
-    start_date: Option<DateTime<Utc>>,
+    can_be_finished: bool,
+    total_goal: i32,
     statistics: TargetStatistics,
     archived: bool,
-
     pub targets: Vec<TargetDetails>,
 }
 
@@ -85,6 +90,8 @@ impl HabitDetails {
             allow_skip: h.allow_skip,
             allow_partial_completion: h.allow_partial_completion,
             allow_over_goal_completion: h.allow_over_goal_completion,
+            can_be_finished: h.can_be_finished,
+            total_goal: h.total_goal,
             targets: targets.clone(),
             archived: h.archived,
             statistics: Target::calculate_statistics(
@@ -115,6 +122,8 @@ pub struct HabitData {
     allow_skip: bool,
     allow_partial_completion: bool,
     allow_over_goal_completion: bool,
+    can_be_finished: bool,
+    total_goal: i32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
