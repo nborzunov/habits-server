@@ -33,7 +33,6 @@ impl Target {
         let days_diff = (today - date.date_naive()).num_days();
 
         if days_diff < 7 && days_diff >= 0 {
-            println!("{} {}", date.date_naive(), days_diff);
             return value + delta;
         }
         return value;

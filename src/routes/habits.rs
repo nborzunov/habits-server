@@ -128,9 +128,15 @@ pub async fn clean_habit(
     path: web::Path<String>,
 ) -> HttpResponse {
     let habit_id = ObjectId::from_str(&path.clone()).unwrap();
-    let res = repository::targets::clean_data(client, &habit_id).await;
+    let res = repository::targets::clean_data(client.clone(), &habit_id).await;
     match res {
-        Ok(_) => HttpResponse::Ok().body("data cleaned"),
+        Ok(_) => match repository::habits::get_by_id(client.clone(), habit_id.clone()).await {
+            Ok(_) => match repository::habits::get_details(client.clone(), habit_id).await {
+                Ok(habit) => HttpResponse::Ok().json(habit),
+                Err(err) => HttpResponse::InternalServerError().body(err),
+            },
+            Err(err) => HttpResponse::InternalServerError().body(err),
+        },
         Err(_) => HttpResponse::InternalServerError().body("Server error"),
     }
 }

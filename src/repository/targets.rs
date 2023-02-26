@@ -84,7 +84,7 @@ pub async fn create(
                         None,
                     )
                     .await
-                    .map(|a| println!("{:?}", a))
+                    .map(|_| ())
                     .map_err(|_| "Failed to delete target".to_string());
             }
         },
