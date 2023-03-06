@@ -21,8 +21,9 @@ validator = { version = "0.16.0", features = ["derive"] }
 jsonwebtoken = "8.2.0"
 pwhash = "1.0.0"
 lazy_static = "1.4.0"
+serde_with = "2.2.0"
 
 [dependencies.mongodb]
 version = "2.2.0"
 default-features = false
-features = ["async-std-runtime"]
+features = ["async-std-runtime", "bson-chrono-0_4", "bson-serde_with"]

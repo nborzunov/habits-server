@@ -8,6 +8,7 @@ use mongodb::Client;
 
 use lazy_static::lazy_static;
 
+mod achievements;
 mod auth;
 mod common;
 mod habits;

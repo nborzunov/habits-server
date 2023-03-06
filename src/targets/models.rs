@@ -1,6 +1,7 @@
 use chrono::{DateTime, TimeZone, Utc};
 use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
+use std::cmp::max;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -111,6 +112,8 @@ impl Target {
 #[serde(rename_all = "camelCase")]
 pub struct TargetStatistics {
     pub current_streak_start_date: Option<DateTime<Utc>>,
+    pub max_streak_count: i32,
+    pub prev_streak_count: i32,
     pub current_streak_count: i32,
     pub current_streak_count_this_week: i32,
     pub current_streak_values: i32,
@@ -134,6 +137,8 @@ impl TargetStatistics {
     fn new() -> Self {
         Self {
             current_streak_start_date: None,
+            max_streak_count: 0,
+            prev_streak_count: 0,
             current_streak_count: 0,
             current_streak_count_this_week: 0,
             current_streak_values: 0,
@@ -162,6 +167,7 @@ impl TargetStatistics {
             self.current_streak_count_this_week = Target::check_prev_week(0, 1, target.date);
             self.current_streak_values_this_week =
                 Target::check_prev_week(0, target.value, target.date);
+            self.max_streak_count = max(self.max_streak_count, self.current_streak_count);
         } else if days_diff == 1 {
             self.current_streak_count += 1;
             self.current_streak_values += target.value;
@@ -172,10 +178,13 @@ impl TargetStatistics {
                 target.value,
                 target.date,
             );
+            self.max_streak_count = max(self.max_streak_count, self.current_streak_count);
         } else {
             self.failed_count += days_diff - 1;
             self.failed_count_this_week =
                 Target::check_prev_week(self.failed_count_this_week, days_diff - 1, target.date);
+            self.max_streak_count = max(self.max_streak_count, self.current_streak_count);
+            self.prev_streak_count = self.current_streak_count;
             self.current_streak_count = 1;
             self.current_streak_values = target.value;
             self.current_streak_start_date = Some(target.date);
@@ -224,7 +233,7 @@ pub struct TargetData {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "camelCase")]
 pub enum TargetType {
     Done,
     Skip,

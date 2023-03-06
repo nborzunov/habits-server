@@ -10,7 +10,7 @@ pub struct Habit {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
     pub user_id: ObjectId,
-    title: String,
+    pub title: String,
     periodicity: Periodicity,
     periodicity_value: Option<DaysSequence>,
     pub created_date: DateTime<Utc>,
@@ -52,7 +52,7 @@ impl Habit {
 pub struct HabitDetails {
     pub id: String,
     pub user_id: String,
-    title: String,
+    pub title: String,
     periodicity: Periodicity,
     periodicity_value: Option<DaysSequence>,
     created_date: DateTime<Utc>,
@@ -64,7 +64,7 @@ pub struct HabitDetails {
     allow_over_goal_completion: bool,
     can_be_finished: bool,
     total_goal: i32,
-    statistics: TargetStatistics,
+    pub statistics: TargetStatistics,
     archived: bool,
     pub targets: Vec<TargetDetails>,
 }
@@ -127,7 +127,7 @@ pub struct HabitData {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "camelCase")]
 pub enum Periodicity {
     Daily,
     Weekly,
@@ -139,7 +139,7 @@ pub enum Periodicity {
 pub struct DaysSequence(pub Vec<DayOfTheWeek>);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "camelCase")]
 pub enum DayOfTheWeek {
     Sunday,
     Monday,
@@ -151,8 +151,115 @@ pub enum DayOfTheWeek {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "camelCase")]
 pub enum GoalType {
     Times,
     Mins,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Copy)]
+#[serde(rename_all = "camelCase")]
+pub enum HabitsAchievement {
+    StreakStarter,
+    HabitFormed,
+    ConsistencyChampion,
+    HabitualHero,
+    HabitMaster,
+    HabitProdigy,
+    HabitLegend,
+    SteadyEddie,
+    Relentless,
+    Unstoppable,
+    SurpassingLimits,
+    Perseverance,
+    ComebackKid,
+}
+
+impl HabitsAchievement {
+    pub fn goal(&self) -> Option<i32> {
+        match self {
+            Self::StreakStarter => Some(3),
+            Self::HabitFormed => Some(7),
+            Self::ConsistencyChampion => Some(14),
+            Self::HabitualHero => Some(30),
+            Self::HabitMaster => Some(60),
+            Self::HabitProdigy => Some(90),
+            Self::HabitLegend => Some(180),
+            Self::SteadyEddie => Some(21),
+            Self::Relentless => Some(30),
+            Self::Unstoppable => Some(60),
+            _ => None,
+        }
+    }
+
+    pub fn get_all() -> Vec<Self> {
+        vec![
+            Self::StreakStarter,
+            Self::HabitFormed,
+            Self::ConsistencyChampion,
+            Self::HabitualHero,
+            Self::HabitMaster,
+            Self::HabitProdigy,
+            Self::HabitLegend,
+            Self::SteadyEddie,
+            Self::Relentless,
+            Self::Unstoppable,
+            Self::SurpassingLimits,
+            Self::Perseverance,
+            Self::ComebackKid,
+        ]
+    }
+
+    pub fn check(achievement_key: &HabitsAchievement, habit: HabitDetails) -> (bool, i32) {
+        let mut completed = false;
+
+        return match achievement_key {
+            HabitsAchievement::StreakStarter
+            | HabitsAchievement::HabitFormed
+            | HabitsAchievement::ConsistencyChampion
+            | HabitsAchievement::HabitualHero
+            | HabitsAchievement::HabitMaster
+            | HabitsAchievement::HabitProdigy
+            | HabitsAchievement::HabitLegend => {
+                let goal = achievement_key.goal();
+                if goal.is_some() && habit.statistics.max_streak_count >= goal.unwrap() {
+                    completed = true;
+                }
+                (completed, habit.statistics.max_streak_count)
+            }
+            HabitsAchievement::SteadyEddie
+            | HabitsAchievement::Relentless
+            | HabitsAchievement::Unstoppable => {
+                let goal = achievement_key.goal();
+                if goal.is_some()
+                    && habit.statistics.max_streak_count >= goal.unwrap()
+                    && habit.statistics.failed_count == 0
+                {
+                    completed = true;
+                }
+
+                (completed, habit.statistics.completed_count)
+            }
+            HabitsAchievement::SurpassingLimits => {
+                if habit.statistics.current_streak_count >= habit.statistics.prev_streak_count
+                    && habit.statistics.prev_streak_count > 0
+                {
+                    completed = true;
+                }
+
+                (completed, habit.statistics.current_streak_count)
+            }
+            HabitsAchievement::Perseverance | HabitsAchievement::ComebackKid => {
+                let goal = achievement_key.goal();
+                if goal.is_some()
+                    && habit.statistics.current_streak_count >= goal.unwrap()
+                    && habit.statistics.failed_count > 0
+                {
+                    completed = true;
+                }
+
+                (completed, habit.statistics.current_streak_count)
+            }
+        };
+    }
 }

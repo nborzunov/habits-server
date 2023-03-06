@@ -5,10 +5,11 @@ use actix_web::{delete, get, post, put, web, HttpResponse, Scope};
 use mongodb::bson::oid::ObjectId;
 use mongodb::Client;
 
+use crate::achievements::models::AchievementType;
 use crate::common::middlewares::auth::AuthenticationService;
 use crate::habits::models::{Habit, HabitData, HabitDetails};
 use crate::targets::models::TargetDetails;
-use crate::{habits, targets};
+use crate::{achievements, habits, targets};
 
 pub fn routes() -> Scope {
     web::scope("/habits")
@@ -60,7 +61,19 @@ pub async fn create(
     .await
     {
         Ok(habit_id) => match habits::repository::get_details(client.clone(), habit_id).await {
-            Ok(habit) => HttpResponse::Ok().json(habit),
+            Ok(habit) => {
+                match achievements::repository::create(
+                    client.clone(),
+                    user.0.id.unwrap(),
+                    AchievementType::Habits,
+                    habit_id.clone(),
+                )
+                .await
+                {
+                    Ok(_) => HttpResponse::Ok().json(habit),
+                    Err(err) => HttpResponse::InternalServerError().body(err),
+                }
+            }
             Err(err) => HttpResponse::InternalServerError().body(err),
         },
 
