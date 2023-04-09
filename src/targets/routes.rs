@@ -1,24 +1,18 @@
-use actix_web::{post, web, HttpResponse, Scope};
-use mongodb::Client;
-
 use crate::achievements::models::{AchievementKey, AchievementType};
 use crate::common::middlewares::auth::AuthenticationService;
-use crate::habits::models::HabitDetails;
 use crate::targets::models::{Target, TargetData};
 use crate::{achievements, habits, targets};
-use serde::{Deserialize, Serialize};
+use actix_web::{post, web, HttpResponse, Scope};
+use mongodb::Client;
+use tokio::sync::mpsc;
 
 pub fn routes() -> Scope {
     web::scope("/targets").service(create)
 }
 
-#[derive(Serialize, Deserialize)]
-struct Response {
-    habit: HabitDetails,
-    achievements: Vec<AchievementKey>,
-}
 #[post("/")]
 pub async fn create(
+    achievements_data: web::Data<mpsc::UnboundedSender<Vec<AchievementKey>>>,
     user: AuthenticationService,
     client: web::Data<Client>,
     form: web::Json<TargetData>,
@@ -32,17 +26,14 @@ pub async fn create(
     {
         Ok(_) => match habits::repository::get_details(client.clone(), form.habit_id).await {
             Ok(habit) => {
-                let new_achievements = achievements::repository::check_all(
+                tokio::spawn(achievements::repository::check_all(
                     client.clone(),
                     AchievementType::Habits,
                     form.habit_id,
-                )
-                .await;
+                    achievements_data.get_ref().clone(),
+                ));
 
-                return HttpResponse::Ok().json(Response {
-                    habit: habit.clone(),
-                    achievements: new_achievements,
-                });
+                return HttpResponse::Ok().json(habit.clone());
             }
             Err(err) => HttpResponse::InternalServerError().body(err),
         },

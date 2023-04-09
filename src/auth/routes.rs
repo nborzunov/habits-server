@@ -22,7 +22,7 @@ pub async fn login(client: Data<Client>, form: web::Json<LoginData>) -> HttpResp
         Err(_) => {
             return HttpResponse::BadRequest().json(FormError {
                 field: "username",
-                message: "profile:username.notFound",
+                message: "profile:username.errors.notFound",
             });
         }
     };

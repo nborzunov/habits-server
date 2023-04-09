@@ -1,14 +1,15 @@
-use actix_web::web;
-use futures::TryStreamExt;
-use mongodb::bson::doc;
-use mongodb::bson::oid::ObjectId;
-use mongodb::Client;
-
 use crate::achievements::models::{
     Achievement, AchievementKey, AchievementResult, AchievementType, Progress,
 };
 use crate::habits::models::{Habit, HabitsAchievement};
 use crate::{habits, DB_NAME};
+use actix_web::web;
+use futures::TryStreamExt;
+use mongodb::bson::doc;
+use mongodb::bson::oid::ObjectId;
+use mongodb::Client;
+use std::cmp::Reverse;
+use tokio::sync::mpsc;
 
 const COLL_NAME: &str = "achievements";
 
@@ -95,6 +96,8 @@ fn group_achievements(
             }
         }
 
+        progress.sort_by_key(|p| Reverse(p.progress));
+
         let achievement = AchievementResult {
             key: AchievementKey::Habits(achievement_key.clone()),
             achievement_type: AchievementType::Habits,
@@ -147,61 +150,69 @@ pub async fn check_all(
     client: web::Data<Client>,
     achievement_type: AchievementType,
     origin_ref: ObjectId,
-) -> Vec<AchievementKey> {
-    match achievement_type {
-        AchievementType::Habits => {
-            let achievements = get_achievements(client.clone(), origin_ref)
-                .await
-                .map_err(|_| "Failed to get achievements".to_string());
+    achievements_sender: mpsc::UnboundedSender<Vec<AchievementKey>>,
+) -> Result<(), ()> {
+    async move {
+        match achievement_type {
+            AchievementType::Habits => {
+                let achievements = get_achievements(client.clone(), origin_ref)
+                    .await
+                    .map_err(|_| "Failed to get achievements".to_string());
 
-            if achievements.is_err() {
-                return vec![];
-            }
-
-            let mut new_achievements = vec![];
-
-            for achievement in achievements.unwrap() {
-                let habit =
-                    habits::repository::get_details(client.clone(), achievement.origin_ref.clone())
-                        .await
-                        .unwrap();
-
-                let AchievementKey::Habits(key) = &achievement.key.clone();
-
-                let (completed, progress) = HabitsAchievement::check(key, habit);
-
-                if completed && !achievement.completed {
-                    new_achievements.push(achievement.key.clone());
+                if achievements.is_err() {
+                    achievements_sender.send(vec![]).unwrap();
                 }
-                if progress != achievement.progress {
-                    let completed_date = if completed {
-                        Some(chrono::Utc::now().to_string())
-                    } else {
-                        None
-                    };
 
-                    client
-                        .database(&DB_NAME)
-                        .collection::<Achievement>(COLL_NAME)
-                        .update_one(
-                            doc! {
-                                "_id": achievement.id.unwrap(),
-                            },
-                            doc! {
-                                "$set": {
-                                    "completed": completed,
-                                    "completedDate": completed_date,
-                                    "progress": progress
-                                }
-                            },
-                            None,
-                        )
-                        .await
-                        .expect("Failed to update achievement");
+                let mut new_achievements = vec![];
+
+                for achievement in achievements.unwrap() {
+                    let habit = habits::repository::get_details(
+                        client.clone(),
+                        achievement.origin_ref.clone(),
+                    )
+                    .await
+                    .unwrap();
+
+                    let AchievementKey::Habits(key) = &achievement.key.clone();
+
+                    let (completed, progress) = HabitsAchievement::check(key, habit);
+
+                    if completed && !achievement.completed {
+                        new_achievements.push(achievement.key.clone());
+                    }
+                    if progress != achievement.progress {
+                        let completed_date = if completed {
+                            Some(chrono::Utc::now().to_string())
+                        } else {
+                            None
+                        };
+
+                        client
+                            .database(&DB_NAME)
+                            .collection::<Achievement>(COLL_NAME)
+                            .update_one(
+                                doc! {
+                                    "_id": achievement.id.unwrap(),
+                                },
+                                doc! {
+                                    "$set": {
+                                        "completed": completed,
+                                        "completedDate": completed_date,
+                                        "progress": progress
+                                    }
+                                },
+                                None,
+                            )
+                            .await
+                            .expect("Failed to update achievement");
+                    }
                 }
-            }
 
-            new_achievements
+                achievements_sender.send(new_achievements).unwrap();
+            }
         }
+
+        return Ok(());
     }
+    .await
 }
