@@ -14,6 +14,7 @@ use tokio::sync::mpsc;
 mod achievements;
 mod auth;
 mod common;
+mod finance;
 mod habits;
 mod routes;
 mod targets;

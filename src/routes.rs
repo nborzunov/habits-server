@@ -1,4 +1,4 @@
-use crate::{achievements, auth, habits, targets, users};
+use crate::{achievements, auth, finance, habits, targets, users};
 use actix_web::{web, HttpResponse, Scope};
 
 async fn init() -> HttpResponse {
@@ -12,5 +12,6 @@ pub fn routes() -> Scope {
         .service(habits::routes::routes())
         .service(targets::routes::routes())
         .service(achievements::routes::routes())
+        .service(finance::routes::routes())
         .route("/", web::get().to(init))
 }

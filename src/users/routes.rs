@@ -6,8 +6,8 @@ use mongodb::Client;
 use crate::common::middlewares::auth::AuthenticationService;
 use crate::common::services::crypto::Auth;
 use crate::common::services::hashing::hashing;
-use crate::users;
 use crate::users::models::{ChangePasswordData, UpdateUserData, UserData, UserDetails};
+use crate::{finance, users};
 
 pub fn routes() -> Scope {
     web::scope("/users")
@@ -24,6 +24,11 @@ pub async fn create(client: web::Data<Client>, form: web::Json<UserData>) -> Htt
     match res {
         Ok(user) => {
             let token = hashing().generate_jwt(user.id.unwrap()).await.unwrap();
+
+            tokio::spawn(finance::repository::categories::create_default(
+                client.clone(),
+                user.id.unwrap(),
+            ));
 
             HttpResponse::Ok().json(Auth { token })
         }

@@ -1,13 +1,11 @@
 use crate::achievements::models::AchievementKey;
 use crate::common::middlewares::auth::AuthenticationService;
-use crate::habits::models::{HabitDetails, HabitsAchievement};
 use crate::{achievements, habits};
 use actix::AsyncContext;
 use actix::{Actor, StreamHandler};
 use actix_web::{get, web, Error, HttpRequest, HttpResponse, Scope};
 use actix_web_actors::ws;
 use mongodb::Client;
-use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::sync::mpsc;
@@ -18,11 +16,6 @@ pub fn routes() -> Scope {
         .route("/ws", web::get().to(ws))
 }
 
-#[derive(Serialize, Deserialize)]
-struct Response {
-    habit: HabitDetails,
-    achievements: Vec<HabitsAchievement>,
-}
 #[get("/")]
 pub async fn get(user: AuthenticationService, client: web::Data<Client>) -> HttpResponse {
     let habits = habits::repository::get_all(client.clone(), user.0.id.unwrap())
