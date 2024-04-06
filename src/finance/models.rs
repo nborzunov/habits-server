@@ -182,7 +182,6 @@ pub mod categories {
     use chrono::{DateTime, Utc};
     use mongodb::bson::oid::ObjectId;
     use serde::{Deserialize, Serialize};
-    use std::collections::HashMap;
 
     #[derive(Debug, Serialize, Deserialize, Clone)]
     #[serde(rename_all = "camelCase")]
@@ -190,9 +189,10 @@ pub mod categories {
         #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
         pub id: Option<ObjectId>,
         user_id: ObjectId,
-        parent_id: Option<ObjectId>,
         pub category_type: TransactionType,
         name: String,
+        icon: String,
+        color: String,
         default: bool,
         created_date: DateTime<Utc>,
         modified_date: Option<DateTime<Utc>>,
@@ -203,9 +203,10 @@ pub mod categories {
             Category {
                 id: None,
                 user_id: user_id.clone(),
-                parent_id: data.parent_id.clone(),
                 category_type: data.category_type.clone(),
                 name: data.name.clone(),
+                icon: data.icon.clone(),
+                color: data.color.clone(),
                 default: data.default,
                 created_date: Utc::now(),
                 modified_date: None,
@@ -215,55 +216,32 @@ pub mod categories {
         pub fn get_details(&self) -> CategoryDetails {
             CategoryDetails {
                 id: self.id.clone().unwrap().to_string(),
-                parent_id: self.parent_id.clone().map(|id| id.to_string()),
                 category_type: self.category_type.clone(),
                 name: self.name.clone(),
+                color: self.color.clone(),
+                icon: self.icon.clone(),
                 default: self.default,
-                children: vec![],
             }
-        }
-
-        pub fn build_tree(
-            categories: &HashMap<String, CategoryDetails>,
-            parent_id: &Option<String>,
-        ) -> Vec<CategoryDetails> {
-            categories
-                .iter()
-                .filter(|(_, category)| category.parent_id == *parent_id)
-                .map(|(id, category)| {
-                    let mut category_details = category.clone();
-                    category_details.children = Self::build_tree(categories, &Some(id.clone()));
-                    category_details
-                })
-                .collect()
-        }
-
-        pub fn get_tree(categories: Vec<CategoryDetails>) -> Vec<CategoryDetails> {
-            let mut categories_map: HashMap<String, CategoryDetails> = HashMap::new();
-            for category in categories {
-                categories_map.insert(category.id.clone(), category);
-            }
-
-            Self::build_tree(&categories_map, &None)
         }
     }
     #[derive(Debug, Serialize, Deserialize, Clone)]
     #[serde(rename_all = "camelCase")]
     pub struct CategoryDetails {
         pub id: String,
-        pub parent_id: Option<String>,
         pub category_type: TransactionType,
         pub name: String,
-        pub children: Vec<CategoryDetails>,
+        pub color: String,
+        pub icon: String,
         pub default: bool,
     }
 
     #[derive(Debug, Serialize, Deserialize, Clone)]
     #[serde(rename_all = "camelCase")]
     pub struct CategoryData {
-        pub parent_id: Option<ObjectId>,
         pub category_type: TransactionType,
         pub name: String,
+        pub color: String,
+        pub icon: String,
         pub default: bool,
     }
 

@@ -69,6 +69,7 @@ pub mod transactions {
                         .iter()
                         .map(|t| {
                             let account = accounts_map.get(&t.account_id).unwrap();
+                            println!("categories_map: {:?}", categories_map);
                             let category = categories_map.get(&t.category_id).unwrap();
                             t.get_details(account.clone(), category.clone())
                         })
@@ -179,8 +180,6 @@ pub mod categories {
     use mongodb::bson::doc;
     use mongodb::bson::oid::ObjectId;
     use mongodb::Client;
-    use std::collections::HashMap;
-    use std::str::FromStr;
 
     const COLL_NAME: &str = "categories";
 
@@ -253,8 +252,8 @@ pub mod categories {
                         .collect();
 
                     CategoriesResult {
-                        income: Category::get_tree(income_categories),
-                        expense: Category::get_tree(expense_categories),
+                        income: income_categories,
+                        expense: expense_categories,
                     }
                 })
                 .map_err(|_| "Failed to collect categories".to_string())?),
@@ -264,52 +263,43 @@ pub mod categories {
 
     pub async fn get(
         client: web::Data<Client>,
-        user_id: ObjectId,
+        _user_id: ObjectId,
         category_id: String,
     ) -> Result<CategoryDetails, String> {
-        let categories = get_all_raw(client, user_id).await?;
-        let mut categories_map: HashMap<String, CategoryDetails> = HashMap::new();
-        for category in categories {
-            if let Some(id) = category.id {
-                categories_map.insert(id.to_string(), category.get_details());
-            }
+        let category = match client
+        .database(&DB_NAME)
+        .collection::<Category>(COLL_NAME)
+        .find_one(
+            doc! {
+                "_id": &category_id
+            },
+            None,
+        )
+        .await
+    {
+        Ok(category) => category,
+        Err(_) => return Err("Failed to get category".to_string()),
+    };
+
+        match category {
+            Some(category) => Ok(category.get_details()),
+            None => Err("Category not found".to_string()),
         }
-
-        let trees = Category::build_tree(&categories_map, &Some(category_id.clone()));
-        let mut category = categories_map.get(&category_id).unwrap().clone();
-
-        category.children = trees;
-
-        Ok(category)
     }
 
     pub async fn delete(
         client: web::Data<Client>,
-        user_id: ObjectId,
+        _user_id: ObjectId,
         category_id: String,
     ) -> Result<(), String> {
-        let categories = get_all_raw(client.clone(), user_id).await?;
-        let mut categories_map: HashMap<String, CategoryDetails> = HashMap::new();
-        for category in categories {
-            if let Some(id) = category.id {
-                categories_map.insert(id.to_string(), category.get_details());
-            }
-        }
-
-        let trees = Category::build_tree(&categories_map, &Some(category_id));
-        let mut ids: Vec<ObjectId> = Vec::new();
-        for tree in trees {
-            ids.push(ObjectId::from_str(&tree.id).unwrap());
-        }
+        // TODO: delete all transactions for this category
 
         client
             .database(&DB_NAME)
             .collection::<Category>(COLL_NAME)
-            .delete_many(
+            .delete_one(
                 doc! {
-                    "_id": {
-                        "$in": ids
-                    }
+                    "_id": category_id,
                 },
                 None,
             )
@@ -322,37 +312,32 @@ pub mod categories {
         user_id: ObjectId,
     ) -> Result<(), String> {
         let income_categories = vec![
-            "salary",
-            "freelance",
-            "investments",
-            "rentalIncome",
-            "gifts",
-            "sideHustle",
+            ("salary", "orange"),
+            ("freelance", "yellow"),
+            ("rental", "green"),
+            ("bonus", "teal"),
         ];
 
         let expense_categories = vec![
-            "housing",
-            "utilities",
-            "groceries",
-            "transportation",
-            "insurance",
-            "healthcare",
-            "entertainment",
-            "shopping",
-            "diningOut",
-            "education",
-            "investments",
-            "gifts",
-            "travel",
-            "miscellaneous",
+            ("groceries", "orange"),
+            ("dining", "yellow"),
+            ("home", "green"),
+            ("utilities", "teal"),
+            ("bills", "blue"),
+            ("taxes", "cyan"),
+            ("transportation", "purple"),
+            ("entertainment", "pink"),
+            ("healthcare", "red"),
+            ("education", "orange"),
         ];
 
-        for name in income_categories {
+        for (name, color) in income_categories {
             let category = Category::new(
                 &CategoryData {
-                    parent_id: None,
                     category_type: TransactionType::Income,
                     name: name.to_string(),
+                    color: color.to_string(),
+                    icon: name.to_string(),
                     default: true,
                 },
                 user_id.clone(),
@@ -361,12 +346,13 @@ pub mod categories {
             create(client.clone(), category).await?;
         }
 
-        for name in expense_categories {
+        for (name, color) in expense_categories {
             let category = Category::new(
                 &CategoryData {
-                    parent_id: None,
                     category_type: TransactionType::Expense,
                     name: name.to_string(),
+                    color: color.to_string(),
+                    icon: name.to_string(),
                     default: true,
                 },
                 user_id.clone(),

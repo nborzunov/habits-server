@@ -43,6 +43,7 @@ async fn main() -> std::io::Result<()> {
         .expect("PORT must be a number");
     // let url = var("URL").unwrap_or_else(|_| "127.0.0.1".to_string());
 
+    println!("{:?}", port);
     let client = Client::with_uri_str(uri).await.unwrap();
 
     let (achievements_sender, achievements_receiver) =

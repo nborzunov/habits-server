@@ -242,7 +242,6 @@ pub enum TargetType {
 
 #[cfg(test)]
 mod tests {
-    use crate::models::models::{Target, TargetDetails, TargetStatistics, TargetType};
     use crate::targets::models::{Target, TargetDetails, TargetType};
     use chrono::Utc;
     use chrono::{Duration, TimeZone};
