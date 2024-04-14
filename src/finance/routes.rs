@@ -105,10 +105,13 @@ pub mod accounts {
 }
 
 pub mod categories {
+    use std::str::FromStr;
+
     use crate::common::middlewares::auth::AuthenticationService;
     use crate::finance;
     use crate::finance::models::categories::{Category, CategoryData};
     use actix_web::{delete, get, post, web, HttpResponse};
+    use mongodb::bson::oid::ObjectId;
     use mongodb::Client;
 
     #[post("/category")]
@@ -170,7 +173,7 @@ pub mod categories {
         match finance::repository::categories::delete(
             client.clone(),
             user.0.id.unwrap(),
-            path.into_inner(),
+            ObjectId::from_str(&path.into_inner()).unwrap(),
         )
         .await
         {

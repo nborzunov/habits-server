@@ -69,7 +69,6 @@ pub mod transactions {
                         .iter()
                         .map(|t| {
                             let account = accounts_map.get(&t.account_id).unwrap();
-                            println!("categories_map: {:?}", categories_map);
                             let category = categories_map.get(&t.category_id).unwrap();
                             t.get_details(account.clone(), category.clone())
                         })
@@ -82,6 +81,20 @@ pub mod transactions {
                 .map_err(|_| "Failed to collect transactions".to_string())?),
             Err(_) => Err("Failed to get transactions".to_string()),
         };
+    }
+
+    pub async fn delete_all_by_category(
+        client: web::Data<Client>,
+        user_id: ObjectId,
+        category_id: ObjectId,
+    ) -> Result<(), String> {
+        client
+            .database(&DB_NAME)
+            .collection::<Transaction>(COLL_NAME)
+            .delete_many(doc! {"userId": user_id, "categoryId": category_id }, None)
+            .await
+            .map(|_| ())
+            .map_err(|_| "Failed to delete transactions".to_string())
     }
 }
 
@@ -174,7 +187,7 @@ pub mod categories {
         CategoriesResult, Category, CategoryData, CategoryDetails,
     };
     use crate::finance::models::transactions::TransactionType;
-    use crate::DB_NAME;
+    use crate::{finance, DB_NAME};
     use actix_web::web;
     use futures::TryStreamExt;
     use mongodb::bson::doc;
@@ -267,19 +280,19 @@ pub mod categories {
         category_id: String,
     ) -> Result<CategoryDetails, String> {
         let category = match client
-        .database(&DB_NAME)
-        .collection::<Category>(COLL_NAME)
-        .find_one(
-            doc! {
-                "_id": &category_id
-            },
-            None,
-        )
-        .await
-    {
-        Ok(category) => category,
-        Err(_) => return Err("Failed to get category".to_string()),
-    };
+            .database(&DB_NAME)
+            .collection::<Category>(COLL_NAME)
+            .find_one(
+                doc! {
+                    "_id": &category_id
+                },
+                None,
+            )
+            .await
+        {
+            Ok(category) => category,
+            Err(_) => return Err("Failed to get category".to_string()),
+        };
 
         match category {
             Some(category) => Ok(category.get_details()),
@@ -289,22 +302,26 @@ pub mod categories {
 
     pub async fn delete(
         client: web::Data<Client>,
-        _user_id: ObjectId,
-        category_id: String,
+        user_id: ObjectId,
+        category_id: ObjectId,
     ) -> Result<(), String> {
-        // TODO: delete all transactions for this category
-
-        client
+        let _ = client
             .database(&DB_NAME)
             .collection::<Category>(COLL_NAME)
             .delete_one(
                 doc! {
-                    "_id": category_id,
+                    "_id": &category_id,
                 },
                 None,
             )
-            .await
-            .map_or_else(|_| Err("Failed to delete category".to_string()), |_| Ok(()))
+            .await;
+
+        finance::repository::transactions::delete_all_by_category(
+            client.clone(),
+            user_id,
+            category_id,
+        )
+        .await
     }
 
     pub async fn create_default(

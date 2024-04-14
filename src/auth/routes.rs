@@ -13,7 +13,6 @@ pub fn routes() -> Scope {
 
 #[post("/")]
 pub async fn login(client: Data<Client>, form: web::Json<LoginData>) -> HttpResponse {
-    println!("Login request: {:?}", form);
     let username = form.username.clone();
     let password = form.password.clone();
 
