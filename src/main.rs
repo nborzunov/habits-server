@@ -2,52 +2,45 @@ use std::env::{set_var, var};
 use std::sync::{Arc, Mutex};
 
 use actix_cors::Cors;
+use actix_web::web;
 use actix_web::{http::header, middleware::Logger};
 use actix_web::{web::Data, App, HttpServer};
+use diesel::r2d2::{self, ConnectionManager};
+use diesel::PgConnection;
 use dotenv::dotenv;
-use mongodb::Client;
 
-use crate::achievements::models::AchievementKey;
-use lazy_static::lazy_static;
 use tokio::sync::mpsc;
 
-mod achievements;
-mod auth;
+#[macro_use]
+extern crate diesel;
+
 mod common;
-mod finance;
-mod habits;
+mod features;
+mod repository;
 mod routes;
-mod targets;
-mod users;
+mod schema;
 
-lazy_static! {
-    pub static ref DB_NAME: String = match var("DB_NAME") {
-        Ok(v) => v,
-        Err(_) => panic!("Error loading DB_NAME variable"),
-    };
+pub type DBPool = r2d2::Pool<ConnectionManager<PgConnection>>;
+
+pub struct Database {
+    pub pool: DBPool,
 }
-
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     set_var("RUST_LOG", "actix_web=info");
     env_logger::init();
     dotenv().ok();
 
-    let uri = match var("DATABASE_URL") {
-        Ok(v) => v.to_string(),
-        Err(_) => format!("Error loading DATABASE_URL variable"),
-    };
     let port: i32 = var("PORT")
         .unwrap_or_else(|_| "8080".to_string())
         .parse()
         .expect("PORT must be a number");
-    // let url = var("URL").unwrap_or_else(|_| "127.0.0.1".to_string());
 
-    let client = Client::with_uri_str(uri).await.unwrap();
-
-    let (achievements_sender, achievements_receiver) =
-        mpsc::unbounded_channel::<Vec<AchievementKey>>();
+    let (achievements_sender, achievements_receiver) = mpsc::unbounded_channel::<Vec<String>>();
     let achievements_receiver = Arc::new(Mutex::new(achievements_receiver));
+
+    let db = repository::database::Database::new();
+    let app_data = web::Data::new(db);
 
     HttpServer::new(move || {
         App::new()
@@ -62,7 +55,7 @@ async fn main() -> std::io::Result<()> {
                     .max_age(3600),
             )
             .wrap(Logger::default())
-            .app_data(Data::new(client.clone()))
+            .app_data(app_data.clone())
             .app_data(Data::new(achievements_sender.clone()))
             .app_data(Data::new(achievements_receiver.clone()))
             .service(routes::routes())

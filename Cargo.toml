@@ -24,8 +24,6 @@ pwhash = "1.0.0"
 lazy_static = "1.4.0"
 serde_with = "2.2.0"
 tokio = { version = "1.0", features = ["full", "macros"] }
+uuid = { version = "1.8.0", features = ["serde", "v4"] }
+diesel = { version = "2.1.6", features = ["chrono", "postgres", "r2d2", "uuid"] }
 
-[dependencies.mongodb]
-version = "2.2.0"
-default-features = false
-features = ["async-std-runtime", "bson-chrono-0_4", "bson-serde_with"]

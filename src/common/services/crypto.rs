@@ -3,10 +3,10 @@ use std::sync::Arc;
 use actix_web::web::block;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, TokenData, Validation};
-use mongodb::bson::oid::ObjectId;
 use pwhash::bcrypt;
 use pwhash::bcrypt::BcryptSetup;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Debug, Clone)]
 pub struct CryptoService {
@@ -32,7 +32,7 @@ impl CryptoService {
         Ok(bcrypt::verify(password, password_hash))
     }
 
-    pub async fn generate_jwt(&self, user_id: ObjectId) -> Result<String, String> {
+    pub async fn generate_jwt(&self, user_id: Uuid) -> Result<String, String> {
         let jwt_key = self.jwt_secret.clone();
         block(move || {
             let headers = Header::default();
