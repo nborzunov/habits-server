@@ -80,7 +80,7 @@ impl Account {
             .map_err(|_| "Failed to update account amount".to_string())
     }
 
-    pub async fn update(db: web::Data<Database>, id: Uuid, data: UpdateAccountData) -> Result<(), String> {
+    pub async fn update(db: web::Data<Database>, id: Uuid, data: AccountData) -> Result<(), String> {
         diesel::update(accounts::table)
             .filter(accounts::id.eq(id.clone()))
             .set(data)
