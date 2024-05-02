@@ -11,6 +11,7 @@ diesel::table! {
         account_type -> Varchar,
         amount -> Float8,
         created_date -> Timestamptz,
+        a_order -> Int4,
     }
 }
 
@@ -42,6 +43,7 @@ diesel::table! {
         is_default -> Bool,
         created_date -> Timestamptz,
         modified_date -> Nullable<Timestamptz>,
+        c_order -> Int4,
     }
 }
 

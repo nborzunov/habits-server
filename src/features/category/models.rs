@@ -4,9 +4,9 @@ use crate::schema::categories;
 use actix_web::web;
 use chrono::DateTime;
 use chrono::Utc;
+use diesel::dsl::max;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::cmp::Reverse;
 use uuid::Uuid;
 
 #[derive(
@@ -32,15 +32,34 @@ pub struct Category {
     is_default: bool,
     created_date: DateTime<Utc>,
     modified_date: Option<DateTime<Utc>>,
+    c_order: i32,
 }
 
 impl Category {
     pub async fn create(
         db: web::Data<Database>,
-        category_data: NewCategory,
+        category_data: CategoryData,
+        user_id: Uuid,
+        c_order: Option<i32>
     ) -> Result<Uuid, String> {
+        let next_order_number: i32 = match c_order {
+            Some(c_order) => c_order,
+            None => {
+
+                let max_order: Option<i32> = categories::table
+                    .select(max(categories::c_order))
+                    .first(&mut db.pool.get().unwrap())
+                    .unwrap();
+                match max_order {
+                    Some(max_order) => max_order + 1,
+                    None => 0, // Default to 0 if there are no existing orders
+                }
+            }
+        };
+
+
         diesel::insert_into(categories::table)
-            .values(&category_data)
+            .values(NewCategory::create(&category_data, user_id.clone(), next_order_number))
             .get_result::<Category>(&mut db.pool.get().unwrap())
             .map(|t| t.id)
             .map_err(|_| "Failed to create category".to_string())
@@ -50,15 +69,11 @@ impl Category {
         db: web::Data<Database>,
         user_id: Uuid,
     ) -> Result<Vec<Category>, String> {
-        let mut categories = categories::table
+        categories::table
             .filter(categories::user_id.eq(user_id))
+            .order(categories::c_order.asc())
             .load::<Category>(&mut db.pool.get().unwrap())
-            .expect("Error loading categories");
-        // TODO: include sort in query
-
-        categories.sort_by_key(|h| Reverse(h.created_date.clone()));
-
-        return Ok(categories);
+            .map_err( |_| "Error loading categories".to_string())
     }
 
     pub async fn get_all(
@@ -121,11 +136,10 @@ impl Category {
             ("education", "orange"),
         ];
 
-        for (name, color) in income_categories {
+        for (index, (name, color)) in income_categories.iter().enumerate() {
             Self::create(
                 db.clone(),
-                NewCategory::create(
-                    &CategoryData {
+                    CategoryData {
                         category_type: "income".to_string(),
                         name: name.to_string(),
                         color: color.to_string(),
@@ -133,16 +147,15 @@ impl Category {
                         is_default: true,
                     },
                     user_id.clone(),
-                ),
-            )
-            .await?;
+                    Some(index as i32)
+                ).await?;
+            
         }
 
-        for (name, color) in expense_categories {
+         for (index, (name, color)) in expense_categories.iter().enumerate() {
             Self::create(
                 db.clone(),
-                NewCategory::create(
-                    &CategoryData {
+                    CategoryData {
                         category_type: "expense".to_string(),
                         name: name.to_string(),
                         color: color.to_string(),
@@ -150,12 +163,24 @@ impl Category {
                         is_default: true,
                     },
                     user_id.clone(),
-                ),
-            )
-            .await?;
+                    Some(index as i32)
+                ).await?;
         }
 
         return Ok(());
+    }
+
+    pub async fn reorder(db: web::Data<Database>, data: Vec<ReorderCategoriesData>) -> Result<(), String> {
+        for d in data {
+            let _ = diesel::update(categories::table)
+                .filter(categories::id.eq(d.id))
+                .set(categories::c_order.eq(d.c_order))
+                .execute(&mut db.pool.get().unwrap())
+                .map(|_| ())
+                .map_err(|_| "Failed to update categories".to_string());
+        }
+
+        Ok(())
     }
 }
 
@@ -168,10 +193,11 @@ pub struct NewCategory {
     pub color: String,
     pub icon: String,
     pub is_default: bool,
+    pub c_order: i32,
 }
 
 impl NewCategory {
-    pub fn create(data: &CategoryData, user_id: Uuid) -> Self {
+    pub fn create(data: &CategoryData, user_id: Uuid, c_order: i32) -> Self {
         Self {
             user_id: user_id.clone(),
             category_type: data.category_type.clone(),
@@ -179,6 +205,7 @@ impl NewCategory {
             color: data.color.clone(),
             icon: data.icon.clone(),
             is_default: data.is_default,
+            c_order: c_order,
         }
     }
 }
@@ -198,3 +225,11 @@ pub struct CategoriesResult {
     pub income: Vec<Category>,
     pub expense: Vec<Category>,
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone, Insertable, AsChangeset)]
+#[diesel(table_name = categories)]
+pub struct ReorderCategoriesData {
+    id: Uuid,
+    c_order: i32,
+}
+

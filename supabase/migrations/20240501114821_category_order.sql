@@ -1,0 +1,1 @@
+ALTER TABLE categories ADD c_order Integer NOT NULL DEFAULT 0;

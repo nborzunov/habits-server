@@ -16,6 +16,7 @@ pub struct Account {
     pub account_type: String,
     pub amount: f64,
     pub created_date: DateTime<Utc>,
+    pub a_order: i32,
 }
 
 #[derive(Queryable, Debug)]
@@ -41,6 +42,7 @@ pub struct Category {
     pub is_default: bool,
     pub created_date: DateTime<Utc>,
     pub modified_date: Option<DateTime<Utc>>,
+    pub c_order: i32,
 }
 
 #[derive(Queryable, Debug)]
