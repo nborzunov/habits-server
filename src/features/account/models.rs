@@ -34,7 +34,21 @@ pub struct Account {
 }
 
 impl Account {
-    pub async fn create(db: web::Data<Database>, account_data: AccountData, user_id: Uuid) -> Result<Uuid, String> {
+    pub async fn get_all(db: web::Data<Database>, user_id: Uuid) -> Result<Vec<Account>, String> {
+        let accounts = accounts::table
+            .filter(accounts::user_id.eq(user_id))
+            .order(accounts::a_order.asc())
+            .load::<Account>(&mut db.pool.get().unwrap())
+            .expect("Error loading accounts");
+
+        return Ok(accounts);
+    }
+
+    pub async fn create(
+        db: web::Data<Database>,
+        account_data: AccountData,
+        user_id: Uuid,
+    ) -> Result<Uuid, String> {
         let a_order: Option<i32> = accounts::table
             .select(max(accounts::a_order))
             .first(&mut db.pool.get().unwrap())
@@ -46,13 +60,21 @@ impl Account {
         };
 
         diesel::insert_into(accounts::table)
-            .values(NewAccount::create(&account_data, user_id.clone(), next_order_number))
+            .values(NewAccount::create(
+                &account_data,
+                user_id.clone(),
+                next_order_number,
+            ))
             .get_result::<Account>(&mut db.pool.get().unwrap())
             .map(|t| t.id)
             .map_err(|_| "Failed to create account".to_string())
     }
 
-    pub async fn update(db: web::Data<Database>, id: Uuid, data: AccountData) -> Result<(), String> {
+    pub async fn update(
+        db: web::Data<Database>,
+        id: Uuid,
+        data: AccountData,
+    ) -> Result<(), String> {
         diesel::update(accounts::table)
             .filter(accounts::id.eq(id.clone()))
             .set(data)
@@ -61,7 +83,7 @@ impl Account {
             .map_err(|_| "Failed to update account".to_string())
     }
 
-        pub async fn update_amount(
+    pub async fn update_amount(
         db: web::Data<Database>,
         id: Uuid,
         transaction_type: String,
@@ -79,7 +101,10 @@ impl Account {
             .map_err(|_| "Failed to update account amount".to_string())
     }
 
-    pub async fn reorder(db: web::Data<Database>, data: Vec<ReorderAccountsData>) -> Result<(), String> {
+    pub async fn reorder(
+        db: web::Data<Database>,
+        data: Vec<ReorderAccountsData>,
+    ) -> Result<(), String> {
         for d in data {
             let _ = diesel::update(accounts::table)
                 .filter(accounts::id.eq(d.id))
@@ -98,17 +123,6 @@ impl Account {
             .map(|_| ())
             .map_err(|err| err.to_string())
     }
-    pub async fn get_all(db: web::Data<Database>, user_id: Uuid) -> Result<Vec<Account>, String> {
-        let accounts = accounts::table
-            .filter(accounts::user_id.eq(user_id))
-            .order(accounts::a_order.asc())
-            .load::<Account>(&mut db.pool.get().unwrap())
-            .expect("Error loading accounts");
-
-        return Ok(accounts);
-    }
-
-
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Insertable, AsChangeset)]

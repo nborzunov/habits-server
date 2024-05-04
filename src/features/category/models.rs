@@ -36,44 +36,11 @@ pub struct Category {
 }
 
 impl Category {
-    pub async fn create(
-        db: web::Data<Database>,
-        category_data: CategoryData,
-        user_id: Uuid,
-        c_order: Option<i32>
-    ) -> Result<Uuid, String> {
-        let next_order_number: i32 = match c_order {
-            Some(c_order) => c_order,
-            None => {
-
-                let max_order: Option<i32> = categories::table
-                    .select(max(categories::c_order))
-                    .first(&mut db.pool.get().unwrap())
-                    .unwrap();
-                match max_order {
-                    Some(max_order) => max_order + 1,
-                    None => 0, // Default to 0 if there are no existing orders
-                }
-            }
-        };
-
-
-        diesel::insert_into(categories::table)
-            .values(NewCategory::create(&category_data, user_id.clone(), next_order_number))
-            .get_result::<Category>(&mut db.pool.get().unwrap())
-            .map(|t| t.id)
-            .map_err(|_| "Failed to create category".to_string())
-    }
-
-    pub async fn get_all_raw(
-        db: web::Data<Database>,
-        user_id: Uuid,
-    ) -> Result<Vec<Category>, String> {
+    pub async fn get_by_id(db: web::Data<Database>, id: Uuid) -> Result<Category, String> {
         categories::table
-            .filter(categories::user_id.eq(user_id))
-            .order(categories::c_order.asc())
-            .load::<Category>(&mut db.pool.get().unwrap())
-            .map_err( |_| "Error loading categories".to_string())
+            .filter(categories::id.eq(id))
+            .first::<Category>(&mut db.pool.get().unwrap())
+            .map_err(|_| "Category not found".to_string())
     }
 
     pub async fn get_all(
@@ -100,19 +67,45 @@ impl Category {
         })
     }
 
-    pub async fn get_by_id(db: web::Data<Database>, id: Uuid) -> Result<Category, String> {
+    pub async fn get_all_raw(
+        db: web::Data<Database>,
+        user_id: Uuid,
+    ) -> Result<Vec<Category>, String> {
         categories::table
-            .filter(categories::id.eq(id))
-            .first::<Category>(&mut db.pool.get().unwrap())
-            .map_err(|_| "Category not found".to_string())
+            .filter(categories::user_id.eq(user_id))
+            .order(categories::c_order.asc())
+            .load::<Category>(&mut db.pool.get().unwrap())
+            .map_err(|_| "Error loading categories".to_string())
     }
+    pub async fn create(
+        db: web::Data<Database>,
+        category_data: CategoryData,
+        user_id: Uuid,
+        c_order: Option<i32>,
+    ) -> Result<Uuid, String> {
+        let next_order_number: i32 = match c_order {
+            Some(c_order) => c_order,
+            None => {
+                let max_order: Option<i32> = categories::table
+                    .select(max(categories::c_order))
+                    .first(&mut db.pool.get().unwrap())
+                    .unwrap();
+                match max_order {
+                    Some(max_order) => max_order + 1,
+                    None => 0, // Default to 0 if there are no existing orders
+                }
+            }
+        };
 
-    pub async fn delete(db: web::Data<Database>, id: Uuid) -> Result<Uuid, String> {
-        let category = categories::table.filter(categories::id.eq(id));
-        diesel::delete(category)
-            .execute(&mut db.pool.get().unwrap())
-            .map(|_| id)
-            .map_err(|_| "Error deleting category".to_string())
+        diesel::insert_into(categories::table)
+            .values(NewCategory::create(
+                &category_data,
+                user_id.clone(),
+                next_order_number,
+            ))
+            .get_result::<Category>(&mut db.pool.get().unwrap())
+            .map(|t| t.id)
+            .map_err(|_| "Failed to create category".to_string())
     }
 
     pub async fn create_default(db: web::Data<Database>, user_id: Uuid) -> Result<(), String> {
@@ -139,38 +132,55 @@ impl Category {
         for (index, (name, color)) in income_categories.iter().enumerate() {
             Self::create(
                 db.clone(),
-                    CategoryData {
-                        category_type: "income".to_string(),
-                        name: name.to_string(),
-                        color: color.to_string(),
-                        icon: name.to_string(),
-                        is_default: true,
-                    },
-                    user_id.clone(),
-                    Some(index as i32)
-                ).await?;
-            
+                CategoryData {
+                    category_type: "income".to_string(),
+                    name: name.to_string(),
+                    color: color.to_string(),
+                    icon: name.to_string(),
+                    is_default: true,
+                },
+                user_id.clone(),
+                Some(index as i32),
+            )
+            .await?;
         }
 
-         for (index, (name, color)) in expense_categories.iter().enumerate() {
+        for (index, (name, color)) in expense_categories.iter().enumerate() {
             Self::create(
                 db.clone(),
-                    CategoryData {
-                        category_type: "expense".to_string(),
-                        name: name.to_string(),
-                        color: color.to_string(),
-                        icon: name.to_string(),
-                        is_default: true,
-                    },
-                    user_id.clone(),
-                    Some(index as i32)
-                ).await?;
+                CategoryData {
+                    category_type: "expense".to_string(),
+                    name: name.to_string(),
+                    color: color.to_string(),
+                    icon: name.to_string(),
+                    is_default: true,
+                },
+                user_id.clone(),
+                Some(index as i32),
+            )
+            .await?;
         }
 
         return Ok(());
     }
 
-    pub async fn reorder(db: web::Data<Database>, data: Vec<ReorderCategoriesData>) -> Result<(), String> {
+    pub async fn update(
+        db: web::Data<Database>,
+        id: Uuid,
+        data: CategoryData,
+    ) -> Result<(), String> {
+        diesel::update(categories::table)
+            .filter(categories::id.eq(id.clone()))
+            .set(data)
+            .execute(&mut db.pool.get().unwrap())
+            .map(|_| ())
+            .map_err(|_| "Failed to update category".to_string())
+    }
+
+    pub async fn reorder(
+        db: web::Data<Database>,
+        data: Vec<ReorderCategoriesData>,
+    ) -> Result<(), String> {
         for d in data {
             let _ = diesel::update(categories::table)
                 .filter(categories::id.eq(d.id))
@@ -181,6 +191,14 @@ impl Category {
         }
 
         Ok(())
+    }
+
+    pub async fn delete(db: web::Data<Database>, id: Uuid) -> Result<Uuid, String> {
+        let category = categories::table.filter(categories::id.eq(id));
+        diesel::delete(category)
+            .execute(&mut db.pool.get().unwrap())
+            .map(|_| id)
+            .map_err(|_| "Error deleting category".to_string())
     }
 }
 
@@ -232,4 +250,3 @@ pub struct ReorderCategoriesData {
     id: Uuid,
     c_order: i32,
 }
-

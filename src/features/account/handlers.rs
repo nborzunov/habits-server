@@ -5,16 +5,23 @@ use crate::{
     features::account::models::{Account, AccountData},
     repository::database::Database,
 };
-use actix_web::{get, post, put, delete, web, HttpResponse, Scope};
+use actix_web::{delete, get, post, put, web, HttpResponse, Scope};
 use uuid::Uuid;
 
 pub fn routes() -> Scope {
     web::scope("/account")
+        .service(get_accounts)
         .service(create_account)
         .service(update_account)
-        .service(delete_account)
-        .service(get_accounts)
         .service(reorder_accounts)
+        .service(delete_account)
+}
+
+#[get("")]
+async fn get_accounts(user: AuthenticationService, db: web::Data<Database>) -> HttpResponse {
+    let accounts = Account::get_all(db.clone(), user.0.id).await.unwrap();
+
+    HttpResponse::Ok().json(accounts)
 }
 
 #[post("")]
@@ -23,13 +30,7 @@ async fn create_account(
     db: web::Data<Database>,
     form: web::Json<AccountData>,
 ) -> HttpResponse {
-    match Account::create(
-        db.clone(),
-        form.into_inner(),
-        user.0.id,
-    )
-    .await
-    {
+    match Account::create(db.clone(), form.into_inner(), user.0.id).await {
         Ok(_) => HttpResponse::Ok().json(Account::get_all(db.clone(), user.0.id).await.unwrap()),
         Err(_) => HttpResponse::InternalServerError().body("Server error"),
     }
@@ -37,40 +38,15 @@ async fn create_account(
 
 #[put("/{id}")]
 async fn update_account(
-    user: AuthenticationService,
+    _user: AuthenticationService,
     db: web::Data<Database>,
     path: web::Path<Uuid>,
     form: web::Json<AccountData>,
 ) -> HttpResponse {
-    match Account::update(
-        db.clone(),
-        path.clone(),
-        form.into_inner(),
-    )
-    .await
-    {
-        Ok(_) => HttpResponse::Ok().json(Account::get_all(db.clone(), user.0.id).await.unwrap()),
+    match Account::update(db.clone(), path.clone(), form.into_inner()).await {
+        Ok(_) => HttpResponse::Ok().body("Account updated"),
         Err(_) => HttpResponse::InternalServerError().body("Server error"),
     }
-}
-
-#[delete("/{id}")]
-async fn delete_account(
-    _user: AuthenticationService,
-    db: web::Data<Database>,
-    path: web::Path<Uuid>,
-) -> HttpResponse {
-    Transaction::delete_by_account(db.clone(), path.clone()).await.unwrap();
-    Account::delete(db.clone(), path.clone()).await.unwrap();
-
-    HttpResponse::Ok().body("account deleted")
-}
-
-#[get("")]
-async fn get_accounts(user: AuthenticationService, db: web::Data<Database>) -> HttpResponse {
-    let accounts = Account::get_all(db.clone(), user.0.id).await.unwrap();
-
-    HttpResponse::Ok().json(accounts)
 }
 
 #[post("/reorder")]
@@ -83,4 +59,18 @@ async fn reorder_accounts(
         Ok(_) => HttpResponse::Ok().json(Account::get_all(db.clone(), user.0.id).await.unwrap()),
         Err(_) => HttpResponse::InternalServerError().body("Server error"),
     }
+}
+
+#[delete("/{id}")]
+async fn delete_account(
+    _user: AuthenticationService,
+    db: web::Data<Database>,
+    path: web::Path<Uuid>,
+) -> HttpResponse {
+    Transaction::delete_by_account(db.clone(), path.clone())
+        .await
+        .unwrap();
+    Account::delete(db.clone(), path.clone()).await.unwrap();
+
+    HttpResponse::Ok().body("account deleted")
 }
