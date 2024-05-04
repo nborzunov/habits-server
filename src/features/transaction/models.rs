@@ -84,6 +84,17 @@ impl Transaction {
             .map(|_| ())
             .map_err(|_| "Error deleting transaction".to_string())
     }
+
+    pub async fn delete_by_account(
+        db: web::Data<Database>,
+        account_id: Uuid,
+    ) -> Result<(), String> {
+        let transaction = transactions::table.filter(transactions::account_id.eq(account_id));
+        diesel::delete(transaction)
+            .execute(&mut db.pool.get().unwrap())
+            .map(|_| ())
+            .map_err(|_| "Error deleting transaction".to_string())
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Insertable)]

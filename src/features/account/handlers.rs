@@ -1,16 +1,18 @@
 use crate::common::middlewares::auth::AuthenticationService;
 use crate::features::account::models::ReorderAccountsData;
+use crate::features::transaction::models::Transaction;
 use crate::{
     features::account::models::{Account, AccountData},
     repository::database::Database,
 };
-use actix_web::{get, post, put, web, HttpResponse, Scope};
+use actix_web::{get, post, put, delete, web, HttpResponse, Scope};
 use uuid::Uuid;
 
 pub fn routes() -> Scope {
     web::scope("/account")
         .service(create_account)
         .service(update_account)
+        .service(delete_account)
         .service(get_accounts)
         .service(reorder_accounts)
 }
@@ -50,6 +52,18 @@ async fn update_account(
         Ok(_) => HttpResponse::Ok().json(Account::get_all(db.clone(), user.0.id).await.unwrap()),
         Err(_) => HttpResponse::InternalServerError().body("Server error"),
     }
+}
+
+#[delete("/{id}")]
+async fn delete_account(
+    _user: AuthenticationService,
+    db: web::Data<Database>,
+    path: web::Path<Uuid>,
+) -> HttpResponse {
+    Transaction::delete_by_account(db.clone(), path.clone()).await.unwrap();
+    Account::delete(db.clone(), path.clone()).await.unwrap();
+
+    HttpResponse::Ok().body("account deleted")
 }
 
 #[get("")]

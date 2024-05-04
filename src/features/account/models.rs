@@ -52,17 +52,16 @@ impl Account {
             .map_err(|_| "Failed to create account".to_string())
     }
 
-    pub async fn get_all(db: web::Data<Database>, user_id: Uuid) -> Result<Vec<Account>, String> {
-        let accounts = accounts::table
-            .filter(accounts::user_id.eq(user_id))
-            .order(accounts::a_order.asc())
-            .load::<Account>(&mut db.pool.get().unwrap())
-            .expect("Error loading accounts");
-
-        return Ok(accounts);
+    pub async fn update(db: web::Data<Database>, id: Uuid, data: AccountData) -> Result<(), String> {
+        diesel::update(accounts::table)
+            .filter(accounts::id.eq(id.clone()))
+            .set(data)
+            .execute(&mut db.pool.get().unwrap())
+            .map(|_| ())
+            .map_err(|_| "Failed to update account".to_string())
     }
 
-    pub async fn update_amount(
+        pub async fn update_amount(
         db: web::Data<Database>,
         id: Uuid,
         transaction_type: String,
@@ -80,15 +79,6 @@ impl Account {
             .map_err(|_| "Failed to update account amount".to_string())
     }
 
-    pub async fn update(db: web::Data<Database>, id: Uuid, data: AccountData) -> Result<(), String> {
-        diesel::update(accounts::table)
-            .filter(accounts::id.eq(id.clone()))
-            .set(data)
-            .execute(&mut db.pool.get().unwrap())
-            .map(|_| ())
-            .map_err(|_| "Failed to update account".to_string())
-    }
-
     pub async fn reorder(db: web::Data<Database>, data: Vec<ReorderAccountsData>) -> Result<(), String> {
         for d in data {
             let _ = diesel::update(accounts::table)
@@ -101,6 +91,24 @@ impl Account {
 
         Ok(())
     }
+
+    pub async fn delete(db: web::Data<Database>, id: Uuid) -> Result<(), String> {
+        diesel::delete(accounts::table.filter(accounts::id.eq(id.clone())))
+            .execute(&mut db.pool.get().unwrap())
+            .map(|_| ())
+            .map_err(|err| err.to_string())
+    }
+    pub async fn get_all(db: web::Data<Database>, user_id: Uuid) -> Result<Vec<Account>, String> {
+        let accounts = accounts::table
+            .filter(accounts::user_id.eq(user_id))
+            .order(accounts::a_order.asc())
+            .load::<Account>(&mut db.pool.get().unwrap())
+            .expect("Error loading accounts");
+
+        return Ok(accounts);
+    }
+
+
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Insertable, AsChangeset)]
