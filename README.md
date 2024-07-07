@@ -70,7 +70,7 @@ To run the application in development mode, use the following command:
 3. Put your changes into created migration file in supabase/migrations folder
 
 4. Apply the new migration to your local database
-```npx supabase db up```
+```npx supabase migration up```
 Or reset db and apply new migration
 ```npx supabase db reset```
 

@@ -1,4 +1,4 @@
-﻿// @generated automatically by Diesel CLI.
+// @generated automatically by Diesel CLI.
 
 diesel::table! {
     use diesel::sql_types::*;
@@ -53,19 +53,16 @@ diesel::table! {
     habits (id) {
         id -> Uuid,
         user_id -> Uuid,
-        title -> Varchar,
-        periodicity -> Varchar,
-        periodicity_value -> Nullable<Array<Nullable<Text>>>,
+        name -> Varchar,
         created_date -> Timestamptz,
         goal -> Int4,
-        goal_type -> Varchar,
-        allow_skip -> Bool,
-        allow_partial_completion -> Bool,
-        allow_over_goal_completion -> Bool,
-        can_be_finished -> Bool,
-        total_goal -> Int4,
         archived -> Bool,
         deleted -> Bool,
+        color -> Varchar,
+        icon -> Varchar,
+        amount -> Int4,
+        frequency_type -> Varchar,
+        frequency_amount -> Jsonb,
     }
 }
 
@@ -88,10 +85,9 @@ diesel::table! {
         id -> Uuid,
         habit_id -> Uuid,
         user_id -> Uuid,
-        date -> Timestamptz,
+        date -> Date,
         created_date -> Timestamptz,
-        target_type -> Varchar,
-        value -> Int4,
+        amount -> Int4,
         deleted -> Bool,
     }
 }

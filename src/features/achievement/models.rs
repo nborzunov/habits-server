@@ -102,7 +102,7 @@ impl Achievement {
 
                     progress.push(Progress {
                         habit_id: habit.id,
-                        habit_title: habit.title.clone(),
+                        habit_name: habit.name.clone(),
                         progress: habits_achievement.progress,
                     });
                 }
@@ -187,7 +187,7 @@ pub struct AchievementResult {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Progress {
     pub habit_id: Uuid,
-    pub habit_title: String,
+    pub habit_name: String,
     pub progress: i32,
 }
 

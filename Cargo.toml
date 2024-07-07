@@ -25,5 +25,5 @@ lazy_static = "1.4.0"
 serde_with = "2.2.0"
 tokio = { version = "1.0", features = ["full", "macros"] }
 uuid = { version = "1.8.0", features = ["serde", "v4"] }
-diesel = { version = "2.1.6", features = ["chrono", "postgres", "r2d2", "uuid"] }
+diesel = { version = "2.1.6", features = ["serde_json", "chrono", "postgres", "r2d2", "uuid"] }
 

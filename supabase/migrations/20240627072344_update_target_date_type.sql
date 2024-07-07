@@ -1,0 +1,1 @@
+ALTER TABLE targets ALTER COLUMN date TYPE date

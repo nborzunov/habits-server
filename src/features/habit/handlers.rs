@@ -15,6 +15,8 @@ pub fn routes() -> Scope {
         .service(archive)
         .service(clean_habit)
         .service(delete_habits)
+        .service(get_todays_habits)
+        .service(get_grid_habits)
 }
 
 #[get("/")]
@@ -25,6 +27,21 @@ async fn get_all(user: AuthenticationService, db: web::Data<Database>) -> HttpRe
     }
 }
 
+#[get("/today")]
+async fn get_todays_habits(user: AuthenticationService, db: web::Data<Database>) -> HttpResponse {
+    match Habit::get_todays_habits(db.clone(), user.0.id).await {
+        Ok(habits) => HttpResponse::Ok().json(habits),
+        Err(err) => return HttpResponse::InternalServerError().body(err),
+    }
+}
+
+#[get("/grid")]
+async fn get_grid_habits(user: AuthenticationService, db: web::Data<Database>) -> HttpResponse {
+    match Habit::get_grid_habits(db.clone(), user.0.id).await {
+        Ok(habits) => HttpResponse::Ok().json(habits),
+        Err(err) => return HttpResponse::InternalServerError().body(err),
+    }
+}
 #[post("/")]
 async fn create(
     user: AuthenticationService,

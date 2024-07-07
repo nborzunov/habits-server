@@ -1,10 +1,9 @@
 use crate::features::achievement::models::Achievement;
-use crate::features::habit_target::models::{Target, TargetHelper, TargetStatistics};
+use crate::features::habit_target::models::{Target, TargetHelper};
 use crate::features::user::models::User;
 use crate::schema::{achievements, habits, habits_achievements, targets};
 use actix_web::web;
-use chrono::{DateTime, Utc};
-use diesel::dsl::not;
+use chrono::{DateTime, Datelike, NaiveDate, Utc};
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -14,7 +13,6 @@ use crate::diesel::ExpressionMethods;
 use crate::repository::database::Database;
 use std::collections::HashMap;
 use std::str::FromStr;
-use tokio::sync::mpsc;
 
 #[derive(
     Debug,
@@ -28,24 +26,21 @@ use tokio::sync::mpsc;
     Identifiable,
     Associations,
 )]
-#[diesel(belongs_to(User, foreign_key = user_id))]
+#[diesel(belongs_to(User, foreign_key = user_id), check_for_backend(diesel::pg::Pg))]
 #[diesel(table_name = habits)]
 pub struct Habit {
     pub id: Uuid,
     pub user_id: Uuid,
-    pub title: String,
-    pub periodicity: String, // "daily", "weekly", "monthly", "custom"
-    pub periodicity_value: Option<Vec<Option<String>>>, // "sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"
+    pub name: String,
     pub created_date: DateTime<Utc>,
     pub goal: i32,
-    pub goal_type: String, // "times", "mins"
-    pub allow_skip: bool,
-    pub allow_partial_completion: bool,
-    pub allow_over_goal_completion: bool,
-    pub can_be_finished: bool,
-    pub total_goal: i32,
     pub archived: bool,
     pub deleted: bool,
+    pub color: String,
+    pub icon: String,
+    pub amount: i32,
+    pub frequency_type: String, // Daily | Weekly | Monthly | Interval
+    pub frequency_amount: serde_json::Value, // Vec<i32> (list of days for daily), a single number in vec for weekly, monthly and interval
 }
 
 impl Habit {
@@ -72,6 +67,63 @@ impl Habit {
             .into_iter()
             .map(|(h, t)| HabitDetails::parse(&h, t))
             .collect::<Vec<HabitDetails>>();
+
+        return Ok(data);
+    }
+
+    pub async fn get_todays_habits(
+        db: web::Data<Database>,
+        user_id: Uuid,
+    ) -> Result<Vec<HabitDetails>, String> {
+        let weekday: u32 = Utc::now().weekday().num_days_from_sunday();
+        let habits_list: Vec<Habit> = habits::table
+            .filter(habits::user_id.eq(user_id))
+            .filter(habits::frequency_type.eq("daily"))
+            .filter(habits::frequency_amount.contains(serde_json::json!([weekday])))
+            .order(habits::created_date.desc())
+            .load::<Habit>(&mut db.pool.get().unwrap())
+            .unwrap();
+
+        let targets_list: Vec<Vec<Target>> = Target::belonging_to(&habits_list)
+            .order(targets::date.desc())
+            .load::<Target>(&mut db.pool.get().unwrap())
+            .unwrap()
+            .grouped_by(&habits_list);
+
+        let data: Vec<HabitDetails> = habits_list
+            .into_iter()
+            .zip(targets_list)
+            .collect::<Vec<(Habit, Vec<Target>)>>()
+            .into_iter()
+            .map(|(h, t)| HabitDetails::parse(&h, t))
+            .collect::<Vec<HabitDetails>>();
+
+        return Ok(data);
+    }
+
+    pub async fn get_grid_habits(
+        db: web::Data<Database>,
+        user_id: Uuid,
+    ) -> Result<Vec<GridHabitDetails>, String> {
+        let habits_list: Vec<Habit> = habits::table
+            .filter(habits::user_id.eq(user_id))
+            .order(habits::created_date.asc())
+            .load::<Habit>(&mut db.pool.get().unwrap())
+            .unwrap();
+
+        let targets_list: Vec<Vec<Target>> = Target::belonging_to(&habits_list)
+            .order(targets::date.desc())
+            .load::<Target>(&mut db.pool.get().unwrap())
+            .unwrap()
+            .grouped_by(&habits_list);
+
+        let data = habits_list
+            .into_iter()
+            .zip(targets_list)
+            .collect::<Vec<(Habit, Vec<Target>)>>()
+            .into_iter()
+            .map(|(h, t)| GridHabitDetails::parse(&h, t))
+            .collect::<Vec<GridHabitDetails>>();
 
         return Ok(data);
     }
@@ -169,38 +221,26 @@ impl Habit {
 #[diesel(table_name = habits)]
 pub struct NewHabit {
     pub user_id: Uuid,
-    pub title: String,
-    pub periodicity: String,
-    pub periodicity_value: Option<Vec<Option<String>>>,
-    pub created_date: DateTime<Utc>,
+    pub name: String,
+    pub color: String,
+    pub icon: String,
+    pub amount: i32,
     pub goal: i32,
-    pub goal_type: String,
-    pub allow_skip: bool,
-    pub allow_partial_completion: bool,
-    pub allow_over_goal_completion: bool,
-    pub can_be_finished: bool,
-    pub total_goal: i32,
-    pub archived: bool,
-    pub deleted: bool,
+    pub frequency_type: String, // 'daily' | 'weekly' | 'monthly' | 'interval'
+    pub frequency_amount: serde_json::Value,
 }
 
 impl NewHabit {
     pub fn create(new_habit: HabitData, user_id: Uuid) -> Self {
         Self {
             user_id: user_id.clone(),
-            title: new_habit.title.clone(),
-            periodicity: new_habit.periodicity.clone(),
-            periodicity_value: new_habit.periodicity_value.clone(),
-            created_date: Utc::now(),
+            name: new_habit.name,
+            color: new_habit.color,
+            icon: new_habit.icon,
+            amount: new_habit.amount,
             goal: new_habit.goal,
-            goal_type: new_habit.goal_type.clone(),
-            allow_skip: new_habit.allow_skip,
-            allow_partial_completion: new_habit.allow_partial_completion,
-            allow_over_goal_completion: new_habit.allow_over_goal_completion,
-            can_be_finished: new_habit.can_be_finished,
-            total_goal: new_habit.total_goal,
-            archived: false,
-            deleted: false,
+            frequency_type: new_habit.frequency_type,
+            frequency_amount: new_habit.frequency_amount,
         }
     }
 }
@@ -209,58 +249,35 @@ impl NewHabit {
 pub struct HabitDetails {
     pub id: Uuid,
     pub user_id: Uuid,
-    pub title: String,
-    periodicity: String,
-    periodicity_value: Option<Vec<Option<String>>>,
-    created_date: DateTime<Utc>,
-    start_date: Option<DateTime<Utc>>,
-    goal: i32,
-    goal_type: String,
-    allow_skip: bool,
-    allow_partial_completion: bool,
-    allow_over_goal_completion: bool,
-    can_be_finished: bool,
-    total_goal: i32,
-    archived: bool,
-    pub statistics: TargetStatistics,
+    pub name: String,
+    pub color: String,
+    pub icon: String,
+    pub amount: i32,
+    pub goal: i32,
+    pub frequency_type: String,
+    pub frequency_amount: serde_json::Value,
+    pub created_date: DateTime<Utc>,
     pub targets: Vec<Target>,
 }
 
 impl HabitDetails {
-    pub fn parse(h: &Habit, mut targets: Vec<Target>) -> HabitDetails {
-        targets.sort_by_key(|t| t.date.clone());
-
-        if !h.allow_skip {
-            targets.retain(|t| t.target_type != "skip");
-        }
-
+    pub fn parse(h: &Habit, targets: Vec<Target>) -> HabitDetails {
         HabitDetails {
             id: h.id,
-            user_id: h.user_id,
-            title: h.title.clone(),
-            periodicity: h.periodicity.clone(),
-            periodicity_value: h.periodicity_value.clone(),
-            created_date: h.created_date.clone(),
-            start_date: Self::get_start_date(&targets),
+            user_id: h.user_id.clone(),
+            name: h.name.clone(),
+            color: h.color.clone(),
+            icon: h.icon.clone(),
+            amount: h.amount.clone(),
             goal: h.goal.clone(),
-            goal_type: h.goal_type.clone(),
-            allow_skip: h.allow_skip,
-            allow_partial_completion: h.allow_partial_completion,
-            allow_over_goal_completion: h.allow_over_goal_completion,
-            can_be_finished: h.can_be_finished,
-            total_goal: h.total_goal,
-            targets: targets.clone(),
-            archived: h.archived,
-            statistics: TargetHelper::calculate_statistics(
-                targets.clone(),
-                h.allow_skip,
-                h.allow_partial_completion,
-                h.goal,
-            ),
+            frequency_type: h.frequency_type.clone(),
+            frequency_amount: h.frequency_amount.clone(),
+            created_date: h.created_date.clone(),
+            targets: targets,
         }
     }
 
-    pub fn get_start_date(targets: &Vec<Target>) -> Option<DateTime<Utc>> {
+    pub fn get_start_date(targets: &Vec<Target>) -> Option<NaiveDate> {
         if targets.len() == 0 {
             return None;
         }
@@ -268,19 +285,64 @@ impl HabitDetails {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GridHabitDetails {
+    pub id: Uuid,
+    pub user_id: Uuid,
+    pub name: String,
+    pub color: String,
+    pub icon: String,
+    pub amount: i32,
+    pub goal: i32,
+    pub frequency_type: String,
+    pub frequency_amount: serde_json::Value,
+    pub created_date: DateTime<Utc>,
+    pub targets: Vec<GridTarget>,
+    pub current_streak: i32,
+    pub longest_streak: i32,
+    pub total_count: i32,
+}
+
+impl GridHabitDetails {
+    pub fn parse(h: &Habit, targets: Vec<Target>) -> GridHabitDetails {
+        let (current_streak, longest_streak, weekly_targets) =
+            TargetHelper::calculate_streaks(&h, targets.clone());
+        GridHabitDetails {
+            id: h.id,
+            user_id: h.user_id.clone(),
+            name: h.name.clone(),
+            color: h.color.clone(),
+            icon: h.icon.clone(),
+            amount: h.amount.clone(),
+            goal: h.goal.clone(),
+            frequency_type: h.frequency_type.clone(),
+            frequency_amount: h.frequency_amount.clone(),
+            created_date: h.created_date.clone(),
+            targets: weekly_targets,
+            current_streak: current_streak,
+            longest_streak: longest_streak,
+            total_count: targets.len() as i32,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GridTarget {
+    pub id: Uuid,
+    pub date: NaiveDate,
+    pub amount: i32,
+    pub current_streak: i32,
+}
 #[derive(Debug, Serialize, Deserialize, Clone, Insertable, AsChangeset)]
 #[diesel(table_name = habits)]
 pub struct HabitData {
-    title: String,
-    periodicity: String,
-    periodicity_value: Option<Vec<Option<String>>>,
+    name: String,
+    color: String,
+    icon: String,
+    amount: i32,
     goal: i32,
-    goal_type: String,
-    allow_skip: bool,
-    allow_partial_completion: bool,
-    allow_over_goal_completion: bool,
-    can_be_finished: bool,
-    total_goal: i32,
+    frequency_type: String, // 'daily' | 'weekly' | 'monthly' | 'interval'
+    frequency_amount: serde_json::Value,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Copy)]
@@ -329,21 +391,21 @@ impl fmt::Display for HabitsAchievementEnum {
 }
 
 impl HabitsAchievementEnum {
-    pub fn goal(&self) -> Option<i32> {
-        match self {
-            Self::StreakStarter => Some(3),
-            Self::HabitFormed => Some(7),
-            Self::ConsistencyChampion => Some(14),
-            Self::HabitualHero => Some(30),
-            Self::HabitMaster => Some(60),
-            Self::HabitProdigy => Some(90),
-            Self::HabitLegend => Some(180),
-            Self::SteadyEddie => Some(21),
-            Self::Relentless => Some(30),
-            Self::Unstoppable => Some(60),
-            _ => None,
-        }
-    }
+    // pub fn goal(&self) -> Option<i32> {
+    //     match self {
+    //         Self::StreakStarter => Some(3),
+    //         Self::HabitFormed => Some(7),
+    //         Self::ConsistencyChampion => Some(14),
+    //         Self::HabitualHero => Some(30),
+    //         Self::HabitMaster => Some(60),
+    //         Self::HabitProdigy => Some(90),
+    //         Self::HabitLegend => Some(180),
+    //         Self::SteadyEddie => Some(21),
+    //         Self::Relentless => Some(30),
+    //         Self::Unstoppable => Some(60),
+    //         _ => None,
+    //     }
+    // }
 
     pub fn get_all() -> Vec<Self> {
         vec![
@@ -363,58 +425,59 @@ impl HabitsAchievementEnum {
         ]
     }
 
-    pub fn check(key: &HabitsAchievementEnum, habit: HabitDetails) -> (bool, i32) {
-        let mut completed = false;
+    // pub fn check(key: &HabitsAchievementEnum, habit: HabitDetails) -> (bool, i32) {
+    //     let mut completed = false;
 
-        return match key {
-            HabitsAchievementEnum::StreakStarter
-            | HabitsAchievementEnum::HabitFormed
-            | HabitsAchievementEnum::ConsistencyChampion
-            | HabitsAchievementEnum::HabitualHero
-            | HabitsAchievementEnum::HabitMaster
-            | HabitsAchievementEnum::HabitProdigy
-            | HabitsAchievementEnum::HabitLegend => {
-                let goal = key.goal();
-                if goal.is_some() && habit.statistics.max_streak_count >= goal.unwrap() {
-                    completed = true;
-                }
-                (completed, habit.statistics.max_streak_count)
-            }
-            HabitsAchievementEnum::SteadyEddie
-            | HabitsAchievementEnum::Relentless
-            | HabitsAchievementEnum::Unstoppable => {
-                let goal = key.goal();
-                if goal.is_some()
-                    && habit.statistics.max_streak_count >= goal.unwrap()
-                    && habit.statistics.failed_count == 0
-                {
-                    completed = true;
-                }
+    //     return (completed, 0);
+        // return match key {
+        //     HabitsAchievementEnum::StreakStarter
+        //     | HabitsAchievementEnum::HabitFormed
+        //     | HabitsAchievementEnum::ConsistencyChampion
+        //     | HabitsAchievementEnum::HabitualHero
+        //     | HabitsAchievementEnum::HabitMaster
+        //     | HabitsAchievementEnum::HabitProdigy
+        //     | HabitsAchievementEnum::HabitLegend => {
+        //         let goal = key.goal();
+        //         if goal.is_some() && habit.statistics.max_streak_count >= goal.unwrap() {
+        //             completed = true;
+        //         }
+        //         (completed, habit.statistics.max_streak_count)
+        //     }
+        //     HabitsAchievementEnum::SteadyEddie
+        //     | HabitsAchievementEnum::Relentless
+        //     | HabitsAchievementEnum::Unstoppable => {
+        //         let goal = key.goal();
+        //         if goal.is_some()
+        //             && habit.statistics.max_streak_count >= goal.unwrap()
+        //             && habit.statistics.failed_count == 0
+        //         {
+        //             completed = true;
+        //         }
 
-                (completed, habit.statistics.completed_count)
-            }
-            HabitsAchievementEnum::SurpassingLimits => {
-                if habit.statistics.current_streak_count >= habit.statistics.prev_streak_count
-                    && habit.statistics.prev_streak_count > 0
-                {
-                    completed = true;
-                }
+        //         (completed, habit.statistics.completed_count)
+        //     }
+        //     HabitsAchievementEnum::SurpassingLimits => {
+        //         if habit.statistics.current_streak_count >= habit.statistics.prev_streak_count
+        //             && habit.statistics.prev_streak_count > 0
+        //         {
+        //             completed = true;
+        //         }
 
-                (completed, habit.statistics.current_streak_count)
-            }
-            HabitsAchievementEnum::Perseverance | HabitsAchievementEnum::ComebackKid => {
-                let goal = key.goal();
-                if goal.is_some()
-                    && habit.statistics.current_streak_count >= goal.unwrap()
-                    && habit.statistics.failed_count > 0
-                {
-                    completed = true;
-                }
+        //         (completed, habit.statistics.current_streak_count)
+        //     }
+        //     HabitsAchievementEnum::Perseverance | HabitsAchievementEnum::ComebackKid => {
+        //         let goal = key.goal();
+        //         if goal.is_some()
+        //             && habit.statistics.current_streak_count >= goal.unwrap()
+        //             && habit.statistics.failed_count > 0
+        //         {
+        //             completed = true;
+        //         }
 
-                (completed, habit.statistics.current_streak_count)
-            }
-        };
-    }
+        //         (completed, habit.statistics.current_streak_count)
+        //     }
+        // };
+    // }
 }
 
 #[derive(
@@ -489,117 +552,117 @@ impl HabitsAchievement {
             .load::<(HabitsAchievement, Achievement)>(&mut db.pool.get().unwrap())
             .map_err(|_| "Error loading achievements".to_string())
     }
-    pub async fn check_all(
-        db: web::Data<Database>,
-        achievements_sender: mpsc::UnboundedSender<Vec<String>>,
-        user_id: Uuid,
-        habit_id: Uuid,
-    ) -> Result<(), ()> {
-        async move {
-            let achievements = HabitsAchievement::get_all(db.clone(), habit_id)
-                .await
-                .map_err(|_| "Failed to get achievements".to_string());
+    // pub async fn check_all(
+    //     db: web::Data<Database>,
+    //     achievements_sender: mpsc::UnboundedSender<Vec<String>>,
+    //     user_id: Uuid,
+    //     habit_id: Uuid,
+    // ) -> Result<(), ()> {
+    //     async move {
+    //         let achievements = HabitsAchievement::get_all(db.clone(), habit_id)
+    //             .await
+    //             .map_err(|_| "Failed to get achievements".to_string());
 
-            if achievements.is_err() {
-                achievements_sender.send(vec![]).unwrap();
-            }
+    //         if achievements.is_err() {
+    //             achievements_sender.send(vec![]).unwrap();
+    //         }
 
-            let mut new_achievements = vec![];
+    //         let mut new_achievements = vec![];
 
-            let habits_map = Habit::get_all(db.clone(), user_id.clone())
-                .await
-                .map_err(|_| "Failed to get habits".to_string())
-                .unwrap()
-                .into_iter()
-                .map(|item| (item.id, item))
-                .collect::<HashMap<Uuid, HabitDetails>>();
+    //         let habits_map = Habit::get_all(db.clone(), user_id.clone())
+    //             .await
+    //             .map_err(|_| "Failed to get habits".to_string())
+    //             .unwrap()
+    //             .into_iter()
+    //             .map(|item| (item.id, item))
+    //             .collect::<HashMap<Uuid, HabitDetails>>();
 
-            let habit = Habit::get_details(db.clone(), habit_id.clone())
-                .await
-                .map_err(|_| "Failed to get habit".to_string())
-                .unwrap();
+    //         let habit = Habit::get_details(db.clone(), habit_id.clone())
+    //             .await
+    //             .map_err(|_| "Failed to get habit".to_string())
+    //             .unwrap();
 
-            for (habit_achievement, achievement) in achievements.unwrap() {
-                let (completed, progress) = HabitsAchievementEnum::check(
-                    &HabitsAchievementEnum::from_str(&achievement.key).unwrap(),
-                    habit.clone(),
-                );
+    //         for (habit_achievement, achievement) in achievements.unwrap() {
+    //             let (completed, progress) = HabitsAchievementEnum::check(
+    //                 &HabitsAchievementEnum::from_str(&achievement.key).unwrap(),
+    //                 habit.clone(),
+    //             );
 
-                if progress != habit_achievement.progress {
-                    diesel::update(habits_achievements::table)
-                        .filter(habits_achievements::id.eq(habit_achievement.id))
-                        .set(habits_achievements::progress.eq(progress))
-                        .execute(&mut db.pool.get().unwrap())
-                        .map(|_| ())
-                        .map_err(|_| "Failed to update achievement".to_string())
-                        .unwrap();
-                }
+    //             if progress != habit_achievement.progress {
+    //                 diesel::update(habits_achievements::table)
+    //                     .filter(habits_achievements::id.eq(habit_achievement.id))
+    //                     .set(habits_achievements::progress.eq(progress))
+    //                     .execute(&mut db.pool.get().unwrap())
+    //                     .map(|_| ())
+    //                     .map_err(|_| "Failed to update achievement".to_string())
+    //                     .unwrap();
+    //             }
 
-                if completed == achievement.completed {
-                    continue;
-                };
+    //             if completed == achievement.completed {
+    //                 continue;
+    //             };
 
-                let completed_date = if completed {
-                    Some(chrono::Utc::now())
-                } else {
-                    None
-                };
+    //             let completed_date = if completed {
+    //                 Some(chrono::Utc::now())
+    //             } else {
+    //                 None
+    //             };
 
-                let other_habits_achievements: Vec<(bool, i32)> = habits_achievements::table
-                    .filter(habits_achievements::achievement_id.eq(achievement.id))
-                    .filter(not(habits_achievements::id.eq(habit_achievement.id)))
-                    .load::<HabitsAchievement>(&mut db.pool.get().unwrap())
-                    .unwrap()
-                    .into_iter()
-                    .map(|other_habit| {
-                        HabitsAchievementEnum::check(
-                            &HabitsAchievementEnum::from_str(&achievement.key).unwrap(),
-                            habits_map.get(&other_habit.habit_id).unwrap().clone(),
-                        )
-                    })
-                    .collect();
+    //             let other_habits_achievements: Vec<(bool, i32)> = habits_achievements::table
+    //                 .filter(habits_achievements::achievement_id.eq(achievement.id))
+    //                 .filter(not(habits_achievements::id.eq(habit_achievement.id)))
+    //                 .load::<HabitsAchievement>(&mut db.pool.get().unwrap())
+    //                 .unwrap()
+    //                 .into_iter()
+    //                 .map(|other_habit| {
+    //                     HabitsAchievementEnum::check(
+    //                         &HabitsAchievementEnum::from_str(&achievement.key).unwrap(),
+    //                         habits_map.get(&other_habit.habit_id).unwrap().clone(),
+    //                     )
+    //                 })
+    //                 .collect();
 
-                let need_to_notify = completed
-                    && other_habits_achievements
-                        .clone()
-                        .into_iter()
-                        .filter(|(other_habit_completed, _)| *other_habit_completed)
-                        .count()
-                        == 0;
+    //             let need_to_notify = completed
+    //                 && other_habits_achievements
+    //                     .clone()
+    //                     .into_iter()
+    //                     .filter(|(other_habit_completed, _)| *other_habit_completed)
+    //                     .count()
+    //                     == 0;
 
-                if need_to_notify {
-                    new_achievements.push(achievement.key.clone())
-                }
+    //             if need_to_notify {
+    //                 new_achievements.push(achievement.key.clone())
+    //             }
 
-                let need_to_update = (completed && !achievement.completed)
-                    || (!completed
-                        && other_habits_achievements
-                            .clone()
-                            .into_iter()
-                            .filter(|(other_habit_completed, _)| *other_habit_completed)
-                            .count()
-                            == 0);
+    //             let need_to_update = (completed && !achievement.completed)
+    //                 || (!completed
+    //                     && other_habits_achievements
+    //                         .clone()
+    //                         .into_iter()
+    //                         .filter(|(other_habit_completed, _)| *other_habit_completed)
+    //                         .count()
+    //                         == 0);
 
-                if need_to_update {
-                    diesel::update(achievements::table)
-                        .filter(achievements::id.eq(habit_achievement.achievement_id))
-                        .set((
-                            achievements::completed.eq(completed),
-                            achievements::completed_date.eq(completed_date),
-                        ))
-                        .execute(&mut db.pool.get().unwrap())
-                        .map(|_| ())
-                        .map_err(|_| "Failed to update achievement".to_string())
-                        .unwrap();
-                }
-            }
+    //             if need_to_update {
+    //                 diesel::update(achievements::table)
+    //                     .filter(achievements::id.eq(habit_achievement.achievement_id))
+    //                     .set((
+    //                         achievements::completed.eq(completed),
+    //                         achievements::completed_date.eq(completed_date),
+    //                     ))
+    //                     .execute(&mut db.pool.get().unwrap())
+    //                     .map(|_| ())
+    //                     .map_err(|_| "Failed to update achievement".to_string())
+    //                     .unwrap();
+    //             }
+    //         }
 
-            achievements_sender.send(new_achievements).unwrap();
-        }
-        .await;
+    //         achievements_sender.send(new_achievements).unwrap();
+    //     }
+    //     .await;
 
-        return Ok(());
-    }
+    //     return Ok(());
+    // }
 }
 
 pub struct HabitsAchievementDetails {
