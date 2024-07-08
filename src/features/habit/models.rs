@@ -6,7 +6,7 @@ use actix_web::web;
 use chrono::{DateTime, Datelike, NaiveDate, Utc};
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::fmt;
+use std::{cmp, fmt};
 use uuid::Uuid;
 
 use crate::diesel::ExpressionMethods;
@@ -74,13 +74,13 @@ impl Habit {
     pub async fn get_todays_habits(
         db: web::Data<Database>,
         user_id: Uuid,
-    ) -> Result<Vec<HabitDetails>, String> {
+    ) -> Result<Vec<TodaysHabitDetails>, String> {
         let weekday: u32 = Utc::now().weekday().num_days_from_sunday();
         let habits_list: Vec<Habit> = habits::table
             .filter(habits::user_id.eq(user_id))
             .filter(habits::frequency_type.eq("daily"))
             .filter(habits::frequency_amount.contains(serde_json::json!([weekday])))
-            .order(habits::created_date.desc())
+            .order(habits::created_date.asc())
             .load::<Habit>(&mut db.pool.get().unwrap())
             .unwrap();
 
@@ -90,13 +90,13 @@ impl Habit {
             .unwrap()
             .grouped_by(&habits_list);
 
-        let data: Vec<HabitDetails> = habits_list
+        let data: Vec<TodaysHabitDetails> = habits_list
             .into_iter()
             .zip(targets_list)
             .collect::<Vec<(Habit, Vec<Target>)>>()
             .into_iter()
-            .map(|(h, t)| HabitDetails::parse(&h, t))
-            .collect::<Vec<HabitDetails>>();
+            .map(|(h, t)| TodaysHabitDetails::parse(&h, t))
+            .collect::<Vec<TodaysHabitDetails>>();
 
         return Ok(data);
     }
@@ -323,6 +323,43 @@ impl GridHabitDetails {
             longest_streak: longest_streak,
             total_count: targets.len() as i32,
         }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct TodaysHabitDetails {
+    id: Uuid,
+    name: String,
+    icon: String,
+    color: String,
+    goal: i32,
+    progress: i32,
+    today_completed: bool,
+}
+
+impl TodaysHabitDetails {
+    pub fn parse(h: &Habit, targets: Vec<Target>) -> TodaysHabitDetails {
+        TodaysHabitDetails {
+            id: h.id,
+            name: h.name.clone(),
+            icon: h.icon.clone(),
+            color: h.color.clone(),
+            goal: h.goal,
+            progress: cmp::min((targets.len() as f64 / h.goal as f64 * 100.0) as i32, 100),
+            today_completed: Self::is_today_completed(targets)
+        }
+    }
+
+    fn is_today_completed(targets: Vec<Target>) -> bool {
+        let today = Utc::now().date_naive();
+        let mut completed = false;
+        for target in targets {
+            if target.date == today {
+                completed = true;
+                break;
+            }
+        }
+        return completed;
     }
 }
 
