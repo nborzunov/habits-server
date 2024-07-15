@@ -42,6 +42,7 @@ async fn get_grid_habits(user: AuthenticationService, db: web::Data<Database>) -
         Err(err) => return HttpResponse::InternalServerError().body(err),
     }
 }
+
 #[post("/")]
 async fn create(
     user: AuthenticationService,

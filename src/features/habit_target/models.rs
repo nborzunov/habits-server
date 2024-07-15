@@ -1,7 +1,7 @@
 use crate::features::habit::models::GridTarget;
+use crate::features::habit::models::Habit;
 use crate::repository::database::Database;
 use crate::schema::targets;
-use crate::features::habit::models::Habit;
 use actix_web::web;
 use chrono::{DateTime, Datelike, Duration, NaiveDate, Utc};
 use diesel::prelude::*;
@@ -307,59 +307,59 @@ impl TargetHelper {
     //         return statistics;
     //     }
 
-        // let mut prev_date = Utc
-        //     .with_ymd_and_hms(1970, 1, 1, 0, 0, 0)
-        //     .unwrap()
-        //     .date_naive();
+    // let mut prev_date = Utc
+    //     .with_ymd_and_hms(1970, 1, 1, 0, 0, 0)
+    //     .unwrap()
+    //     .date_naive();
 
-        // for target in targets {
-        //     let date = target.date.date_naive();
-        //     let days_diff = (date - prev_date).num_days();
+    // for target in targets {
+    //     let date = target.date.date_naive();
+    //     let days_diff = (date - prev_date).num_days();
 
-        //     if target.target_type == "done" {
-        //         if date == today {
-        //             statistics.completed_today = true;
-        //         }
+    //     if target.target_type == "done" {
+    //         if date == today {
+    //             statistics.completed_today = true;
+    //         }
 
-        //         statistics.update_streak(&target, days_diff as i32);
-        //         statistics.total_values_count += target.amount;
-        //         statistics.total_values_count_this_week = TargetHelper::check_prev_week(
-        //             statistics.total_values_count_this_week,
-        //             target.amount,
-        //             target.date,
-        //         );
+    //         statistics.update_streak(&target, days_diff as i32);
+    //         statistics.total_values_count += target.amount;
+    //         statistics.total_values_count_this_week = TargetHelper::check_prev_week(
+    //             statistics.total_values_count_this_week,
+    //             target.amount,
+    //             target.date,
+    //         );
 
-        //         if !allow_partial_completion || target.amount >= daily_goal {
-        //             statistics.completed_count += 1;
-        //             statistics.completed_values += target.amount;
-        //             statistics.completed_count_this_week = TargetHelper::check_prev_week(
-        //                 statistics.completed_count_this_week,
-        //                 1,
-        //                 target.date,
-        //             );
-        //             statistics.completed_values_this_week = TargetHelper::check_prev_week(
-        //                 statistics.completed_values_this_week,
-        //                 target.amount,
-        //                 target.date,
-        //             );
-        //         }
-        //     } else if allow_skip && target.target_type == "skip" {
-        //         statistics.update_streak(&target, days_diff as i32);
-        //         statistics.skipped_count += 1;
-        //         statistics.skipped_count_this_week = TargetHelper::check_prev_week(
-        //             statistics.skipped_count_this_week,
-        //             1,
-        //             target.date,
-        //         );
-        //     } else {
-        //         if statistics.current_streak_start_date.is_some() {
-        //             statistics.failed_count += (date - prev_date).num_days() as i32 - 1;
-        //             statistics.current_streak_count = 0;
-        //             statistics.current_streak_start_date = None;
-        //         }
-        //     }
-        //     prev_date = date;
-        // }
+    //         if !allow_partial_completion || target.amount >= daily_goal {
+    //             statistics.completed_count += 1;
+    //             statistics.completed_values += target.amount;
+    //             statistics.completed_count_this_week = TargetHelper::check_prev_week(
+    //                 statistics.completed_count_this_week,
+    //                 1,
+    //                 target.date,
+    //             );
+    //             statistics.completed_values_this_week = TargetHelper::check_prev_week(
+    //                 statistics.completed_values_this_week,
+    //                 target.amount,
+    //                 target.date,
+    //             );
+    //         }
+    //     } else if allow_skip && target.target_type == "skip" {
+    //         statistics.update_streak(&target, days_diff as i32);
+    //         statistics.skipped_count += 1;
+    //         statistics.skipped_count_this_week = TargetHelper::check_prev_week(
+    //             statistics.skipped_count_this_week,
+    //             1,
+    //             target.date,
+    //         );
+    //     } else {
+    //         if statistics.current_streak_start_date.is_some() {
+    //             statistics.failed_count += (date - prev_date).num_days() as i32 - 1;
+    //             statistics.current_streak_count = 0;
+    //             statistics.current_streak_start_date = None;
+    //         }
+    //     }
+    //     prev_date = date;
+    // }
 
     //     return statistics;
     // }
@@ -378,14 +378,14 @@ impl TargetHelper {
         }
     }
     pub fn calculate_streaks(habit: &Habit, targets: Vec<Target>) -> (i32, i32, Vec<GridTarget>) {
-        let mut dates: Vec<NaiveDate> = targets.iter().map(|t| t.date).collect();
-        dates.sort();
+        if targets.len() == 0 {
+            return (0, 0, Vec::new());
+        }
+        let dates: Vec<NaiveDate> = targets.iter().map(|t| t.date).collect();
 
         let mut current_streak = 0;
         let mut longest_streak = 0;
-        if dates.len() == 0 {
-            return (0, 0, Vec::new());
-        }
+
         let mut last_date = dates.first().unwrap().clone();
         let mut grid_targets: Vec<GridTarget> = Vec::new();
 

@@ -50,12 +50,12 @@ impl Habit {
     ) -> Result<Vec<HabitDetails>, String> {
         let habits_list: Vec<Habit> = habits::table
             .filter(habits::user_id.eq(user_id))
-            .order(habits::created_date.desc())
+            .order(habits::created_date.asc())
             .load::<Habit>(&mut db.pool.get().unwrap())
             .unwrap();
 
         let targets_list: Vec<Vec<Target>> = Target::belonging_to(&habits_list)
-            .order(targets::date.desc())
+            .order(targets::date.asc())
             .load::<Target>(&mut db.pool.get().unwrap())
             .unwrap()
             .grouped_by(&habits_list);
@@ -85,7 +85,7 @@ impl Habit {
             .unwrap();
 
         let targets_list: Vec<Vec<Target>> = Target::belonging_to(&habits_list)
-            .order(targets::date.desc())
+            .order(targets::date.asc())
             .load::<Target>(&mut db.pool.get().unwrap())
             .unwrap()
             .grouped_by(&habits_list);
@@ -112,7 +112,7 @@ impl Habit {
             .unwrap();
 
         let targets_list: Vec<Vec<Target>> = Target::belonging_to(&habits_list)
-            .order(targets::date.desc())
+            .order(targets::date.asc())
             .load::<Target>(&mut db.pool.get().unwrap())
             .unwrap()
             .grouped_by(&habits_list);
@@ -146,7 +146,7 @@ impl Habit {
             .unwrap();
 
         let targets_list: Vec<Vec<Target>> = Target::belonging_to(&habit)
-            .order(targets::date.desc())
+            .order(targets::date.asc())
             .load::<Target>(&mut db.pool.get().unwrap())
             .unwrap()
             .grouped_by(&habit);
@@ -346,20 +346,23 @@ impl TodaysHabitDetails {
             color: h.color.clone(),
             goal: h.goal,
             progress: cmp::min((targets.len() as f64 / h.goal as f64 * 100.0) as i32, 100),
-            today_completed: Self::is_today_completed(targets)
+            today_completed: Self::is_today_completed(targets),
         }
     }
 
     fn is_today_completed(targets: Vec<Target>) -> bool {
         let today = Utc::now().date_naive();
-        let mut completed = false;
-        for target in targets {
-            if target.date == today {
-                completed = true;
-                break;
+
+        match targets.last() {
+            Some(target) => {
+                if target.date == today {
+                    return true;
+                }
             }
+            None => {}
         }
-        return completed;
+
+        return false;
     }
 }
 
@@ -466,54 +469,54 @@ impl HabitsAchievementEnum {
     //     let mut completed = false;
 
     //     return (completed, 0);
-        // return match key {
-        //     HabitsAchievementEnum::StreakStarter
-        //     | HabitsAchievementEnum::HabitFormed
-        //     | HabitsAchievementEnum::ConsistencyChampion
-        //     | HabitsAchievementEnum::HabitualHero
-        //     | HabitsAchievementEnum::HabitMaster
-        //     | HabitsAchievementEnum::HabitProdigy
-        //     | HabitsAchievementEnum::HabitLegend => {
-        //         let goal = key.goal();
-        //         if goal.is_some() && habit.statistics.max_streak_count >= goal.unwrap() {
-        //             completed = true;
-        //         }
-        //         (completed, habit.statistics.max_streak_count)
-        //     }
-        //     HabitsAchievementEnum::SteadyEddie
-        //     | HabitsAchievementEnum::Relentless
-        //     | HabitsAchievementEnum::Unstoppable => {
-        //         let goal = key.goal();
-        //         if goal.is_some()
-        //             && habit.statistics.max_streak_count >= goal.unwrap()
-        //             && habit.statistics.failed_count == 0
-        //         {
-        //             completed = true;
-        //         }
+    // return match key {
+    //     HabitsAchievementEnum::StreakStarter
+    //     | HabitsAchievementEnum::HabitFormed
+    //     | HabitsAchievementEnum::ConsistencyChampion
+    //     | HabitsAchievementEnum::HabitualHero
+    //     | HabitsAchievementEnum::HabitMaster
+    //     | HabitsAchievementEnum::HabitProdigy
+    //     | HabitsAchievementEnum::HabitLegend => {
+    //         let goal = key.goal();
+    //         if goal.is_some() && habit.statistics.max_streak_count >= goal.unwrap() {
+    //             completed = true;
+    //         }
+    //         (completed, habit.statistics.max_streak_count)
+    //     }
+    //     HabitsAchievementEnum::SteadyEddie
+    //     | HabitsAchievementEnum::Relentless
+    //     | HabitsAchievementEnum::Unstoppable => {
+    //         let goal = key.goal();
+    //         if goal.is_some()
+    //             && habit.statistics.max_streak_count >= goal.unwrap()
+    //             && habit.statistics.failed_count == 0
+    //         {
+    //             completed = true;
+    //         }
 
-        //         (completed, habit.statistics.completed_count)
-        //     }
-        //     HabitsAchievementEnum::SurpassingLimits => {
-        //         if habit.statistics.current_streak_count >= habit.statistics.prev_streak_count
-        //             && habit.statistics.prev_streak_count > 0
-        //         {
-        //             completed = true;
-        //         }
+    //         (completed, habit.statistics.completed_count)
+    //     }
+    //     HabitsAchievementEnum::SurpassingLimits => {
+    //         if habit.statistics.current_streak_count >= habit.statistics.prev_streak_count
+    //             && habit.statistics.prev_streak_count > 0
+    //         {
+    //             completed = true;
+    //         }
 
-        //         (completed, habit.statistics.current_streak_count)
-        //     }
-        //     HabitsAchievementEnum::Perseverance | HabitsAchievementEnum::ComebackKid => {
-        //         let goal = key.goal();
-        //         if goal.is_some()
-        //             && habit.statistics.current_streak_count >= goal.unwrap()
-        //             && habit.statistics.failed_count > 0
-        //         {
-        //             completed = true;
-        //         }
+    //         (completed, habit.statistics.current_streak_count)
+    //     }
+    //     HabitsAchievementEnum::Perseverance | HabitsAchievementEnum::ComebackKid => {
+    //         let goal = key.goal();
+    //         if goal.is_some()
+    //             && habit.statistics.current_streak_count >= goal.unwrap()
+    //             && habit.statistics.failed_count > 0
+    //         {
+    //             completed = true;
+    //         }
 
-        //         (completed, habit.statistics.current_streak_count)
-        //     }
-        // };
+    //         (completed, habit.statistics.current_streak_count)
+    //     }
+    // };
     // }
 }
 
